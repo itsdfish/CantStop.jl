@@ -1,5 +1,7 @@
 module CantStop
 
-# Write your package code here.
+
+    include("structs.jl")
+    include("functions.jl")
 
 end
