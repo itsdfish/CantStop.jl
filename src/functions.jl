@@ -1,6 +1,4 @@
-function roll(dice)
-    return rand(1:dice.sides, dice.n)
-end
+roll(dice) = rand(1:dice.sides, dice.n)
 
 # function move!(game::AbstractGame, col, player_id)
 #     column = game.columns[col]
@@ -70,10 +68,70 @@ function runner_selection_phase!(game::AbstractGame, player::AbstractPlayer)
     for i ∈ 1:2
         outcome = roll(game.dice)
         columns,rows = select_runners!(game, player, outcome, i)
+        is_valid(game, outcome, columns, rows)
         push!(game.runners, columns...)
+
         # update game board
     end
     return nothing
+end
+
+function is_valid(game, outcome, columns, rows, player_id)
+    if isempty(columns)
+        error("columns cannot be empty")
+    end 
+    if isempty(rows)
+        error("rows cannot be empty")
+    end 
+    if length(rows) ≠ length(columns)
+        error("columns and rows do not have the same length")
+    end
+    if length(rows) > 2
+        error("length of rows cannot exceed 2")
+    end
+    if !is_in_range(game, columns)
+        error("$columns not in range")
+    end
+    if !is_combination(outcome, columns)
+        error("$columns is not a valid pair for $outcome")
+    end
+    if has_been_won(game, columns)
+        error("$columns has been won")
+    end
+    if !rows_are_valid(game, columns, rows, player_id)
+        error("rows $rows are not valid")
+    end
+    return true
+end
+
+function has_been_won(game, columns)
+    for c ∈ columns 
+        column = game.columns[c]
+        isempty(column[end]) ? (continue) : (return true)
+    end
+    return false
+end
+
+function is_in_range(game, columns)
+    valid_cols = 2:12
+    for c ∈ columns 
+        c ∈ valid_cols ? (continue) : (return false)
+    end
+    return true 
+end
+
+function rows_are_valid(game, columns, rows, player_id)
+    n = length(columns)
+    for i ∈ 1:n 
+        if rows[i] == 1
+            break 
+        elseif rows[i] > length(game.columns[columns[i]])
+            return false 
+        elseif player_id ∉ game.columns[columns[i]][rows[i]-1] 
+            return false
+        end
+    end
+    return true 
 end
 
 function decision_phase!(game::AbstractGame, player::AbstractPlayer)
