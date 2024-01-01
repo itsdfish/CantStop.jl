@@ -47,20 +47,11 @@ end
     using CantStop: is_playing
     using Test
 
-    outcome = [1,2,3,4]
-    columns = []
+    c_idx = []
+    @test !is_playing(c_idx)
 
-    @test !is_playing(outcome, columns)
-
-    outcome = [1,2,3,4]
-    columns = [30,40]
-
-    @test !is_playing(outcome, columns)
-
-    outcome = [1,2,3,4]
-    columns = [3,30]
-
-    @test is_playing(outcome, columns)
+    c_idx = [3,7]
+    @test is_playing(c_idx)
 end
 
 @safetestset "is_valid" begin
@@ -234,5 +225,26 @@ end
         player_id = :player
 
         @test is_valid(game, outcome, columns, rows, player_id)
+    end
+end
+
+@safetestset "move!" begin 
+    using CantStop
+    using CantStop: move!
+    using Test
+
+    game = Game()
+    c_idx = 3
+    r_idx = 2
+    column = game.columns[3]
+    push!(column[1], :_runner)
+    move!(game, c_idx, r_idx)
+
+    for i ∈ 1:length(column)
+        if i == r_idx 
+            @test :_runner ∈ game.columns[c_idx][i]
+        else
+            @test :_runner ∉ game.columns[c_idx][i]
+        end
     end
 end

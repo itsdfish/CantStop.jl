@@ -16,6 +16,15 @@ end
 
 abstract type AbstractGame end
 
+"""
+    Game{T} <: AbstractGame
+
+# Fields 
+
+- `dice::Dice`: an object resepresenting four dice 
+- `columns::Dict{Int,T}`: a dictionary representing columns 2-12. Each column is a vector of symbol vectors which contain the player ids 
+- `runners`: a vector of column,row indices representing the position of runners 
+"""
 mutable struct Game{T} <: AbstractGame
     dice::Dice 
     columns::Dict{Int,T}
