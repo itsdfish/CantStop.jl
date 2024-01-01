@@ -43,22 +43,11 @@ end
     @test is_bust(outcome, columns)
 end
 
-@safetestset "is_playing" begin
-    using CantStop: is_playing
-    using Test
-
-    c_idx = []
-    @test !is_playing(c_idx)
-
-    c_idx = [3,7]
-    @test is_playing(c_idx)
-end
-
-@safetestset "is_valid" begin
+@safetestset "is_valid_runner" begin
 
     @safetestset "unequal length" begin 
         using CantStop
-        using CantStop: is_valid
+        using CantStop: is_valid_runner
         using Test
 
         game = Game()
@@ -69,12 +58,12 @@ end
         player_id = :player 
 
         message = ErrorException("columns and rows do not have the same length")
-        @test_throws  message is_valid(game, outcome, columns, rows, player_id)
+        @test_throws  message is_valid_runner(game, outcome, columns, rows, player_id)
     end
 
     @safetestset "column error" begin 
         using CantStop
-        using CantStop: is_valid
+        using CantStop: is_valid_runner
         using Test
 
         game = Game()
@@ -84,12 +73,12 @@ end
         player_id = :player 
         message = ErrorException("columns cannot be empty")
 
-        @test_throws message is_valid(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
     end
 
     @safetestset "row empty error" begin 
         using CantStop
-        using CantStop: is_valid
+        using CantStop: is_valid_runner
         using Test
 
         game = Game()
@@ -99,12 +88,12 @@ end
         player_id = :player 
         message = ErrorException("rows cannot be empty")
 
-        @test_throws message is_valid(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
     end
 
     @safetestset "not in range" begin 
         using CantStop
-        using CantStop: is_valid
+        using CantStop: is_valid_runner
         using Test
 
         game = Game()
@@ -115,12 +104,12 @@ end
 
         message = ErrorException("$columns not in range") 
 
-        @test_throws message is_valid(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
     end
 
     @safetestset "not in range" begin 
         using CantStop
-        using CantStop: is_valid
+        using CantStop: is_valid_runner
         using Test
 
         game = Game()
@@ -131,12 +120,12 @@ end
 
         message = ErrorException("$columns is not a valid pair for $outcome")
     
-        @test_throws message is_valid(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
     end
 
     @safetestset "has been won" begin 
         using CantStop
-        using CantStop: is_valid
+        using CantStop: is_valid_runner
         using Test
 
         game = Game()
@@ -148,12 +137,12 @@ end
 
         message = ErrorException("$columns has been won")
 
-        @test_throws message is_valid(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
     end
 
     @safetestset "row length too large" begin 
         using CantStop
-        using CantStop: is_valid
+        using CantStop: is_valid_runner
         using Test
 
         game = Game()
@@ -163,12 +152,12 @@ end
         player_id = :player
 
         message = ErrorException("length of rows cannot exceed 2")
-        @test_throws message is_valid(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
     end
 
     @safetestset "row out of bounds" begin 
         using CantStop
-        using CantStop: is_valid
+        using CantStop: is_valid_runner
         using Test
 
         game = Game()
@@ -178,12 +167,12 @@ end
         player_id = :player
         message = ErrorException("rows $rows are not valid")
 
-        @test_throws message is_valid(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
     end
 
     @safetestset "non-contiguous runner row position" begin 
         using CantStop
-        using CantStop: is_valid
+        using CantStop: is_valid_runner
         using Test
 
         game = Game()
@@ -193,12 +182,12 @@ end
         player_id = :player
         message = ErrorException("rows $rows are not valid")
 
-        @test_throws message is_valid(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
     end
 
     @safetestset "wrong player_id" begin 
         using CantStop
-        using CantStop: is_valid
+        using CantStop: is_valid_runner
         using Test
 
         game = Game()
@@ -209,12 +198,12 @@ end
         player_id = :player
         message = ErrorException("rows $rows are not valid")
 
-        @test_throws message is_valid(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
     end
 
     @safetestset "valid columns" begin 
         using CantStop
-        using CantStop: is_valid
+        using CantStop: is_valid_runner
         using Test
 
         game = Game()
@@ -224,7 +213,152 @@ end
         rows = [2,1]
         player_id = :player
 
-        @test is_valid(game, outcome, columns, rows, player_id)
+        @test is_valid_runner(game, outcome, columns, rows, player_id)
+    end
+end
+
+@safetestset "is_valid_move" begin
+
+    @safetestset "incorrect column length" begin 
+        using CantStop
+        using CantStop: is_valid_move
+        using Test
+
+        game = Game()
+        push!(game.columns[2][end], :player)
+        outcome = [1,2,3,4]
+        columns = [2]
+        rows = [1,2]
+        player_id = :player 
+
+        message = ErrorException("length of row and column indices must be 2")
+        @test_throws  message is_valid_move(game, outcome, columns, rows, player_id)
+    end
+
+    @safetestset "incorrect row length" begin 
+        using CantStop
+        using CantStop: is_valid_move
+        using Test
+
+        game = Game()
+        push!(game.columns[2][end], :player)
+        outcome = [1,2,3,4]
+        columns = [2,3]
+        rows = [1,2,4]
+        player_id = :player 
+
+        message = ErrorException("length of row and column indices must be 2")
+        @test_throws  message is_valid_move(game, outcome, columns, rows, player_id)
+    end
+
+    @safetestset "not in range" begin 
+        using CantStop
+        using CantStop: is_valid_move
+        using Test
+
+        game = Game()
+        outcome = [1,2,3,4]
+        columns = [13,7]
+        rows = [1,2]
+        player_id = :player 
+
+        message = ErrorException("$columns not in range") 
+
+        @test_throws message is_valid_move(game, outcome, columns, rows, player_id)
+    end
+
+    @safetestset "not in range" begin 
+        using CantStop
+        using CantStop: is_valid_move
+        using Test
+
+        game = Game()
+        outcome = [1,2,3,4]
+        columns = [2,7]
+        rows = [1,2]
+        player_id = :player 
+
+        message = ErrorException("$columns is not a valid pair for $outcome")
+    
+        @test_throws message is_valid_move(game, outcome, columns, rows, player_id)
+    end
+
+    @safetestset "has been won" begin 
+        using CantStop
+        using CantStop: is_valid_move
+        using Test
+
+        game = Game()
+        push!(game.columns[3][end], :player)
+        outcome = [1,2,3,4]
+        columns = [3,7]
+        rows = [1,2]
+        player_id = :player 
+
+        message = ErrorException("$columns has been won")
+
+        @test_throws message is_valid_move(game, outcome, columns, rows, player_id)
+    end
+
+    @safetestset "row out of bounds" begin 
+        using CantStop
+        using CantStop: is_valid_move
+        using Test
+
+        game = Game()
+        outcome = [1,2,3,4]
+        columns = [3,7]
+        rows = [4,2]
+        player_id = :player
+        message = ErrorException("rows $rows are not valid")
+
+        @test_throws message is_valid_move(game, outcome, columns, rows, player_id)
+    end
+
+    @safetestset "non-contiguous runner row position" begin 
+        using CantStop
+        using CantStop: is_valid_move
+        using Test
+
+        game = Game()
+        outcome = [1,2,3,4]
+        columns = [3,7]
+        rows = [2,2]
+        player_id = :player
+        message = ErrorException("rows $rows are not valid")
+
+        @test_throws message is_valid_move(game, outcome, columns, rows, player_id)
+    end
+
+    @safetestset "wrong player_id" begin 
+        using CantStop
+        using CantStop: is_valid_move
+        using Test
+
+        game = Game()
+        push!(game.columns[3][1], :wrong_player)
+        outcome = [1,2,3,4]
+        columns = [3,7]
+        rows = [2,2]
+        player_id = :player
+        message = ErrorException("rows $rows are not valid")
+
+        @test_throws message is_valid_move(game, outcome, columns, rows, player_id)
+    end
+
+    @safetestset "valid columns" begin 
+        using CantStop
+        using CantStop: is_valid_move
+        using Test
+
+        game = Game()
+        push!(game.columns[3][1], :player)
+        outcome = [1,2,3,4]
+        columns = [3,7]
+        rows = [2,1]
+        player_id = :player
+
+        @test is_valid_move(game, outcome, columns, rows, player_id)
     end
 end
 

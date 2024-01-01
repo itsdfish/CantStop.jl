@@ -21,9 +21,8 @@ function runner_selection_phase!(game::AbstractGame, player::AbstractPlayer)
     for i ∈ 1:2
         outcome = roll(game.dice)
         c_idx,rows = select_runners!(game, player, outcome, i)
-        is_valid(game, outcome, c_idx, rows)
+        is_valid_runner(game, outcome, c_idx, rows)
         push!(game.runners, c_idx...)
-
         # update game board
     end
     return nothing
@@ -41,14 +40,19 @@ moving the runners. The two methods named `decide!` are called during this phase
 - `player::AbstractPlayer`: an subtype of a abstract player
 """
 function decision_phase!(game::AbstractGame, player::AbstractPlayer)
-    decide!(game, player) ? nothing : (return nothing)
-    while is_playing(game, c_idx) 
+    while true
+        risk_it = take_chance(game, player)
+        risk_it ? nothing : (set_pieces(game); break) 
         outcome = roll(game.dice)
         is_bust(game, outcome) ? (clear_runners!(game); break) : nothing
-        c_idx = decide!(game, player, outcome)
-        # isempty(columns) ? break : nothing 
-        # is_valid
+        c_idx, r_idx = select_columns(game, player, outcome)
+        is_valid_move(game, outcome, c_idx, r_idx)
+        # update board
     end
+end
+
+function take_chance(game::AbstractGame, player::AbstractPlayer)
+
 end
 
 roll(dice) = rand(1:dice.sides, dice.n)
@@ -99,7 +103,7 @@ end
 
 is_bust(outcome, c_idx; fun=any) = !is_combination(outcome, c_idx; fun)
 
-function is_valid(game, outcome, c_idx, rows, player_id)
+function is_valid_runner(game, outcome, c_idx, rows, player_id)
     if isempty(c_idx)
         error("columns cannot be empty")
     end 
@@ -123,6 +127,25 @@ function is_valid(game, outcome, c_idx, rows, player_id)
     end
     if !rows_are_valid(game, c_idx, rows, player_id)
         error("rows $rows are not valid")
+    end
+    return true
+end
+
+function is_valid_move(game, outcome, c_idx, r_idx, player_id)
+    if length(r_idx) ≠ 2 || length(c_idx) ≠ 2
+        error("length of row and column indices must be 2")
+    end
+    if !is_in_range(game, c_idx)
+        error("$c_idx not in range")
+    end
+    if !is_combination(outcome, c_idx)
+        error("$c_idx is not a valid pair for $outcome")
+    end
+    if has_been_won(game, c_idx)
+        error("$c_idx has been won")
+    end
+    if !rows_are_valid(game, c_idx, r_idx, player_id)
+        error("rows $r_idx are not valid")
     end
     return true
 end
