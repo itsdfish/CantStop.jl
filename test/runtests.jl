@@ -382,3 +382,149 @@ end
         end
     end
 end
+
+@safetestset "replace_runners!" begin 
+    using CantStop
+    using CantStop: replace_runners!
+    using Test
+
+    game = Game()
+    player_id = :player
+    c_idx = 3
+    r_idx = 2
+    columns = game.columns
+
+    push!(columns[c_idx][r_idx], :_runner)
+    push!(game.c_idx, c_idx)
+    push!(game.r_idx, r_idx)
+
+    c_idx1 = 4
+    r_idx1 = 5
+    push!(columns[c_idx1][r_idx1], player_id)
+
+    replace_runners!(game, player_id)
+
+    for c ∈ keys(columns)
+        for r ∈ 1:length(columns[c])
+            if (r == r_idx) && (c == c_idx)
+                @test player_id ∈ columns[c][r]
+            elseif (r == r_idx1) && (c == c_idx1)
+                @test player_id ∈ columns[c][r]
+            else
+                @test :_runner ∉ columns[c][r]
+            end
+        end
+    end
+end
+
+@safetestset "remove_cones!" begin 
+    using CantStop
+    using CantStop: remove_cones!
+    using Test
+
+    game = Game()
+    player_id = :player
+    c_idx = 3
+    r_idx = 2
+    columns = game.columns
+
+    push!(columns[c_idx][r_idx], player_id)
+    push!(game.c_idx, c_idx)
+    push!(game.r_idx, r_idx)
+
+    c_idx1 = 4
+    r_idx1 = 5
+    player_id1 = :player1
+    push!(columns[c_idx1][r_idx1], player_id1)
+
+    remove_cones!(game, player_id)
+
+    for c ∈ keys(columns)
+        for r ∈ 1:length(columns[c])
+            if (r == r_idx1) && (c == c_idx1)
+                @test player_id1 ∈ columns[c][r]
+            else
+                @test player_id ∉ columns[c][r]
+            end
+        end
+    end
+end
+
+@safetestset "next" begin 
+    using CantStop
+    using CantStop: next
+    using Test
+
+    n = 3 
+
+    @test next(1, n) == 2 
+    @test next(2, n) == 3
+    @test next(3, n) == 1
+end
+
+@safetestset "is_over" begin
+    @safetestset "1" begin 
+        using CantStop
+        using CantStop: is_over
+        using Test
+
+        game = Game()
+        columns = game.columns 
+
+        push!(columns[2][end], :player1)
+        push!(columns[3][end], :player1)
+        push!(columns[4][end], :player1)
+
+        @test is_over(game)
+    end
+
+    @safetestset "2" begin 
+        using CantStop
+        using CantStop: is_over
+        using Test
+
+        game = Game()
+        columns = game.columns 
+
+        push!(columns[2][end], :player1)
+        push!(columns[3][end-1], :player1)
+        push!(columns[4][end], :player1)
+
+        @test !is_over(game)
+    end
+
+    @safetestset "3" begin 
+        using CantStop
+        using CantStop: is_over
+        using Test
+
+        game = Game()
+        columns = game.columns 
+
+        push!(columns[3][end], :player1)
+        push!(columns[3][end], :player1)
+        push!(columns[4][end], :player3)
+
+        @test !is_over(game)
+    end
+end
+# @safetestset "replace_runners!" begin 
+#     using CantStop
+#     using CantStop: replace_runners!
+#     using Test
+
+#     game = Game()
+#     c_idx = 3
+#     r_idx = 2
+#     column = game.columns[3]
+#     push!(column[1], :_runner)
+#     push!(game.c_idx, c_idx)
+#     push!(game.r_idx, r_idx)
+
+#     remove_runners!(game)
+
+#     for c ∈ game.columns
+#     for i ∈ 1:length(c)
+#         @test :_runner ∉ game.columns[c_idx][i]
+#     end
+# end

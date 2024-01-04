@@ -1,3 +1,15 @@
+function play(game::AbstractGame, players)
+    shuffle!(players)
+    n = length(players)
+    idx = 1
+    while !is_over(game)
+        play_round!(game, players[idx])
+        idx = next(idx, n)
+    end
+end
+
+next(idx, n) = idx == n ? 1 : idx += 1
+
 function play_round!(game::AbstractGame, player::AbstractPlayer)
     runner_selection_phase!(game, player)
     decision_phase!(game, player)
@@ -16,13 +28,12 @@ The function `select_runners!` is called during this phase.
 - `player::AbstractPlayer`: an subtype of a abstract player
 """
 function runner_selection_phase!(game::AbstractGame, player::AbstractPlayer)
-    runners = Int[]
-    columns = Int[]
     for i ∈ 1:2
         outcome = roll(game.dice)
-        c_idx,rows = select_runners!(game, player, outcome, i)
+        c_idx,r_idx = select_runners!(game, player, outcome, i)
         is_valid_runner(game, outcome, c_idx, rows)
-        push!(game.runners, c_idx...)
+        push!(game.c_idx, c_idx...)
+        push!(game.r_idx, r_idx...)
         # update game board
     end
     return nothing
@@ -58,20 +69,20 @@ end
 roll(dice) = rand(1:dice.sides, dice.n)
 
 """
-    move!(game::AbstractGame, col, row)
+    move!(game::AbstractGame, c_idx, r_idx)
 
 Move runner to location determined by column and row index
 
 # Arguments
 
 - `game::AbstractGame`: an abstract game object 
-- `col`: column index 
-- `row`: row index
+- `c_idx`: column index 
+- `r_idx`: row index
 """
-function move!(game::AbstractGame, col, row)
-    column = game.columns[col]
-    filter!(x -> x ≠ :_runner, column[row-1])
-    push!(column[row], :_runner)
+function move!(game::AbstractGame, c_idx, r_idx)
+    column = game.columns[c_idx]
+    filter!(x -> x ≠ :_runner, column[r_idx-1])
+    push!(column[r_idx], :_runner)
     return nothing 
 end
 
@@ -180,25 +191,73 @@ function rows_are_valid(game, c_idx, rows, player_id)
     return true 
 end
 
-"""
-    is_playing(c_idx) 
+function set_runners_as_cones!(game::AbstractGame, player_id)
+    remove_cones!(game, player_id)
+    replace_runners!(game, player_id)
+    return nothing
+end
 
-Tests whether the player can continue playing. Returns false if columns is empty.
+"""
+    remove_cones!(game::AbstractGame, player_id)
 
 # Arguments
 
-- `c_idx`: a vector of sums based on pairs of dice outcomes 
+- `game::AbstractGame`: an abstract game object 
+- `player::AbstractPlayer`: an subtype of a abstract player
 """
-function is_playing(c_idx) 
-    return !isempty(c_idx)
+function remove_cones!(game::AbstractGame, player_id)
+    (;r_idx,c_idx,columns) = game 
+    for (c,r) ∈ zip(c_idx, r_idx)
+        row = columns[c][r]
+        idx = findfirst(x -> x == player_id, row)
+        deleteat!(row, idx)
+    end
+    return nothing
 end
 
-function replace_runners!()
+"""
+    replace_runners!(game::AbstractGame, player_id)
 
+Re
+
+# Arguments
+
+- `game::AbstractGame`: an abstract game object 
+- `player::AbstractPlayer`: an subtype of a abstract player
+"""
+function replace_runners!(game::AbstractGame, player_id)
+    for c ∈ values(game.columns)
+        for r ∈ c 
+            replace!(r, :_runner => player_id)
+        end
+    end
 end
 
-function no_winner(horse)
-    return horse.steps ≠ horse.max_steps
+function is_over(game)
+    ids = Symbol[]
+    for c ∈ values(game.columns)
+        push!(ids, unique(c[end])...)
+    end
+    counts = map(x -> count(y -> x == y, ids), unique(ids))
+    return any(x -> x ≥ 3, counts)
+end
+
+"""
+    clear_runners!(game)
+
+Clear runners from board following a bust. 
+
+# Arguments
+
+- `game::AbstractGame`: an abstract game object 
+"""
+function clear_runners!(game) 
+    for c ∈ values(game.columns)
+        for r ∈ c 
+            filter!(x -> x ≠ :_runner, r)
+        end
+    end
+    return nothing
 end
 
 """
