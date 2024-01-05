@@ -417,9 +417,9 @@ end
     end
 end
 
-@safetestset "remove_cones!" begin 
+@safetestset "remove_pieces!" begin 
     using CantStop
-    using CantStop: remove_cones!
+    using CantStop: remove_pieces!
     using Test
 
     game = Game()
@@ -437,7 +437,7 @@ end
     player_id1 = :player1
     push!(columns[c_idx1][r_idx1], player_id1)
 
-    remove_cones!(game, player_id)
+    remove_pieces!(game, player_id)
 
     for c ∈ keys(columns)
         for r ∈ 1:length(columns[c])
@@ -508,23 +508,3 @@ end
         @test !is_over(game)
     end
 end
-# @safetestset "replace_runners!" begin 
-#     using CantStop
-#     using CantStop: replace_runners!
-#     using Test
-
-#     game = Game()
-#     c_idx = 3
-#     r_idx = 2
-#     column = game.columns[3]
-#     push!(column[1], :_runner)
-#     push!(game.c_idx, c_idx)
-#     push!(game.r_idx, r_idx)
-
-#     remove_runners!(game)
-
-#     for c ∈ game.columns
-#     for i ∈ 1:length(c)
-#         @test :_runner ∉ game.columns[c_idx][i]
-#     end
-# end

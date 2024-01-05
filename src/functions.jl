@@ -1,4 +1,14 @@
-function play(game::AbstractGame, players)
+"""
+    simulate(game::AbstractGame, players)
+
+Simulate CantStop until a player has won. 
+
+# Arguments
+
+- `game::AbstractGame`: an abstract game object 
+- `players`: a vector of players where elements are a subtype of a abstract player
+"""
+function simulate(game::AbstractGame, players)
     shuffle!(players)
     n = length(players)
     idx = 1
@@ -8,11 +18,20 @@ function play(game::AbstractGame, players)
     end
 end
 
-next(idx, n) = idx == n ? 1 : idx += 1
+"""
+    play_round!(game::AbstractGame, player::AbstractPlayer)
 
+Play one round with a specified player.
+
+# Arguments
+
+- `game::AbstractGame`: an abstract game object 
+- `player::AbstractPlayer`: an subtype of a abstract player
+"""
 function play_round!(game::AbstractGame, player::AbstractPlayer)
     runner_selection_phase!(game, player)
     decision_phase!(game, player)
+    cleanup!(game)
     return nothing
 end
 
@@ -30,11 +49,10 @@ The function `select_runners!` is called during this phase.
 function runner_selection_phase!(game::AbstractGame, player::AbstractPlayer)
     for i ∈ 1:2
         outcome = roll(game.dice)
-        c_idx,r_idx = select_runners!(game, player, outcome, i)
-        is_valid_runner(game, outcome, c_idx, rows)
-        push!(game.c_idx, c_idx...)
-        push!(game.r_idx, r_idx...)
-        # update game board
+        c_idx,r_idx = select_runners(game, player, outcome, i)
+        is_valid_runner(game, outcome, c_idx, r_idx, player.id)
+        add_positions!(game, c_idx, r_idx)
+        add_runners!(game, c_idx, r_idx)
     end
     return nothing
 end
@@ -53,17 +71,13 @@ moving the runners. The two methods named `decide!` are called during this phase
 function decision_phase!(game::AbstractGame, player::AbstractPlayer)
     while true
         risk_it = take_chance(game, player)
-        risk_it ? nothing : (set_pieces(game); break) 
+        risk_it ? nothing : (set_pieces!(game, player.id); break) 
         outcome = roll(game.dice)
         is_bust(game, outcome) ? (clear_runners!(game); break) : nothing
-        c_idx, r_idx = select_columns(game, player, outcome)
+        c_idx, r_idx = select_positions(game, player, outcome)
         is_valid_move(game, outcome, c_idx, r_idx)
-        # update board
+        move!(game, c_idx, r_idx)
     end
-end
-
-function take_chance(game::AbstractGame, player::AbstractPlayer)
-
 end
 
 roll(dice) = rand(1:dice.sides, dice.n)
@@ -101,15 +115,20 @@ Tests whether columns are a possible some of dice outcome.
 # Arguments
 
 - `outcome`: a vector of dice outcomes 
-- `columns`: a vector of sums based on pairs of dice outcomes 
+- `c_idx`: a vector of sums based on pairs of dice outcomes 
 
 # Keywords
 
 - `fun=all`: a function for testing the combinations 
 """
-function is_combination(outcome, columns; fun=all)
+function is_combination(outcome, c_idx; fun=all)
     combs = sum.(combinations(outcome, 2))
-    return fun(x -> x ∈ combs, columns)
+    return fun(x -> x ∈ combs, c_idx)
+end
+
+function is_bust(game::AbstractGame, outcome; fun=any)
+    c_idx = get_runner_locations(game)
+    return is_bust(outcome, c_idx; fun)
 end
 
 is_bust(outcome, c_idx; fun=any) = !is_combination(outcome, c_idx; fun)
@@ -191,26 +210,26 @@ function rows_are_valid(game, c_idx, rows, player_id)
     return true 
 end
 
-function set_runners_as_cones!(game::AbstractGame, player_id)
-    remove_cones!(game, player_id)
+function set_pieces!(game::AbstractGame, player_id)
+    remove_pieces!(game, player_id)
     replace_runners!(game, player_id)
     return nothing
 end
 
 """
-    remove_cones!(game::AbstractGame, player_id)
+    remove_pieces!(game::AbstractGame, player_id)
 
 # Arguments
 
 - `game::AbstractGame`: an abstract game object 
 - `player::AbstractPlayer`: an subtype of a abstract player
 """
-function remove_cones!(game::AbstractGame, player_id)
+function remove_pieces!(game::AbstractGame, player_id)
     (;r_idx,c_idx,columns) = game 
     for (c,r) ∈ zip(c_idx, r_idx)
         row = columns[c][r]
         idx = findfirst(x -> x == player_id, row)
-        deleteat!(row, idx)
+        isnothing(idx) ? nothing : deleteat!(row, idx)
     end
     return nothing
 end
@@ -218,7 +237,7 @@ end
 """
     replace_runners!(game::AbstractGame, player_id)
 
-Re
+Replaces runners with player_id.
 
 # Arguments
 
@@ -260,6 +279,27 @@ function clear_runners!(game)
     return nothing
 end
 
+function cleanup!(game)
+    empty!(game.r_idx)
+    empty!(game.c_idx)
+    return nothing
+end
+
+next(idx, n) = idx == n ? 1 : idx += 1
+
+function add_positions!(game::AbstractGame, c_idx, r_idx)
+    push!(game.c_idx, c_idx...)
+    push!(game.r_idx, r_idx...)
+    return nothing 
+end
+
+function add_runners!(game::AbstractGame, c_idx, r_idx)
+    for i ∈ 1:length(r_idx)
+        push!(game.columns[c_idx[i]][r_idx[i]], :_runner)
+    end
+    return nothing
+end
+
 """
     setup!(player::AbstractPlayer, ids)
 
@@ -272,4 +312,46 @@ Perform initial setup after cards are delt, but before the game begins.
 """
 function setup!(player::AbstractPlayer, ids)
     # intentionally blank
+end
+
+"""
+    list_sums(game::AbstractGame, outcome)
+
+Lists all unique sum of combinations of the outcome of rolling dice
+
+# Arguments
+
+- `game::AbstractGame`: an abstract game object 
+- `outcome`: the results of rolling the dice
+"""
+list_sums(game, outcome) = unique(sum.(combinations(outcome, 2)))
+
+"""
+    get_runner_locations(game)
+
+Returns runner locations. 
+
+# Arguments
+
+- `game::AbstractGame`: an abstract game object 
+
+# Returns 
+
+- `c_idx`: column indices
+- `r_idx`: row indices
+"""
+function get_runner_locations(game)
+    c_idx = Int[]
+    r_idx = Int[]
+    columns = game.columns
+    for c ∈ keys(columns)
+        for r ∈ 1:length(columns[c])
+            if :_runner ∈ columns[c][r]
+                push!(c_idx, c)
+                push!(r_idx, r)
+                length(c_idx) == 3 ? (return c_idx, r_idx) : nothing
+            end
+        end
+    end
+    return c_idx, r_idx
 end

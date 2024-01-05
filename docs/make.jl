@@ -22,6 +22,7 @@ makedocs(
         "Home" => "index.md",
         "Basic Usage" => "basic_usage.md",
         "API" => "api.md",
+        "Internal Methods" => "internal_methods.md",
     ]
 )
 

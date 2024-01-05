@@ -1,13 +1,21 @@
 module CantStop
 
     using Combinatorics: combinations
+    using Random: shuffle!
 
+    export AbstractGame
     export AbstractPlayer 
-    export Dice 
     export Game 
-    export Player
 
+    export get_runner_locations
+    export list_sums
+    export select_positions
+    export select_runners
+    export simulate
+    export take_chance 
+    
     include("structs.jl")
     include("functions.jl")
+    include("api.jl")
 
 end
