@@ -51,11 +51,13 @@ end
         using Test
 
         game = Game()
+        
         push!(game.columns[2][end], :player)
         outcome = [1,2,3,4]
         columns = [2]
         rows = [1,2]
         player_id = :player 
+        game.pieces[player_id] = fill(player_id, 12)
 
         message = ErrorException("columns and rows do not have the same length")
         @test_throws  message is_valid_runner(game, outcome, columns, rows, player_id)
@@ -71,6 +73,8 @@ end
         columns = []
         rows = [1,2]
         player_id = :player 
+        game.pieces[player_id] = fill(player_id, 12)
+
         message = ErrorException("columns cannot be empty")
 
         @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
@@ -86,6 +90,7 @@ end
         columns = [3,7]
         rows = []
         player_id = :player 
+        game.pieces[player_id] = fill(player_id, 12)
         message = ErrorException("rows cannot be empty")
 
         @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
@@ -101,6 +106,7 @@ end
         columns = [13,7]
         rows = [1,2]
         player_id = :player 
+        game.pieces[player_id] = fill(player_id, 12)
 
         message = ErrorException("$columns not in range") 
 
@@ -117,8 +123,27 @@ end
         columns = [2,7]
         rows = [1,2]
         player_id = :player 
+        game.pieces[player_id] = fill(player_id, 12)
 
         message = ErrorException("$columns is not a valid pair for $outcome")
+    
+        @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
+    end
+
+    @safetestset "valid columns" begin 
+        using CantStop
+        using CantStop: is_valid_runner
+        using Test
+
+        game = Game()
+        push!(game.columns[3][1], :player)
+        outcome = [1,2,3,4]
+        columns = [3,7]
+        rows = [2,1]
+        player_id = :player
+        game.pieces[player_id] = fill(player_id, 1)
+
+        message = ErrorException("Insufficent pieces remaining. Use active piece.")
     
         @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
     end
@@ -134,6 +159,7 @@ end
         columns = [3,7]
         rows = [1,2]
         player_id = :player 
+        game.pieces[player_id] = fill(player_id, 12)
 
         message = ErrorException("$columns has been won")
 
@@ -150,6 +176,7 @@ end
         columns = [2,7,3]
         rows = [1,2,2]
         player_id = :player
+        game.pieces[player_id] = fill(player_id, 12)
 
         message = ErrorException("length of rows cannot exceed 2")
         @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
@@ -165,6 +192,8 @@ end
         columns = [3,7]
         rows = [4,2]
         player_id = :player
+        game.pieces[player_id] = fill(player_id, 12)
+
         message = ErrorException("rows $rows are not valid")
 
         @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
@@ -180,6 +209,7 @@ end
         columns = [3,7]
         rows = [2,2]
         player_id = :player
+        game.pieces[player_id] = fill(player_id, 12)
         message = ErrorException("rows $rows are not valid")
 
         @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
@@ -196,6 +226,8 @@ end
         columns = [3,7]
         rows = [2,2]
         player_id = :player
+        game.pieces[player_id] = fill(player_id, 12)
+
         message = ErrorException("rows $rows are not valid")
 
         @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
@@ -212,6 +244,7 @@ end
         columns = [3,7]
         rows = [2,1]
         player_id = :player
+        game.pieces[player_id] = fill(player_id, 12)
 
         @test is_valid_runner(game, outcome, columns, rows, player_id)
     end
@@ -507,4 +540,37 @@ end
 
         @test !is_over(game)
     end
+end
+
+@safetestset "return_to_reserve!" begin 
+    using CantStop
+    using CantStop: return_to_reserve!
+    using Test
+
+    game = Game()
+    player_id = :p1
+    game.pieces[player_id] = fill(player_id, 9)
+    push!(game.piece_reserve, fill(player_id, 3)...)
+
+    return_to_reserve!(game, player_id)
+
+    @test length(game.pieces[player_id]) == 12
+    @test isempty(game.piece_reserve)
+end
+
+@safetestset "add_pieces_to_reserve!" begin 
+    using CantStop
+    using CantStop: add_pieces_to_reserve!
+    using Test
+
+    game = Game()
+    player_id = :p1
+    c_idx = [1,2]
+    r_idx = [1,2]
+    game.pieces[player_id] = fill(player_id, 12)
+
+    add_pieces_to_reserve!(game, player_id, c_idx, r_idx)
+
+    @test length(game.pieces[player_id]) == 11
+    @test length(game.piece_reserve) == 1
 end

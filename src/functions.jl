@@ -9,6 +9,7 @@ Simulate CantStop until a player has won.
 - `players`: a vector of players where elements are a subtype of a abstract player
 """
 function simulate(game::AbstractGame, players)
+    initialize_pieces!(game, players)
     shuffle!(players)
     n = length(players)
     idx = 1
@@ -47,12 +48,14 @@ The function `select_runners!` is called during this phase.
 - `player::AbstractPlayer`: an subtype of a abstract player
 """
 function runner_selection_phase!(game::AbstractGame, player::AbstractPlayer)
+    id = player.id
     for i ∈ 1:2
         outcome = roll(game.dice)
         c_idx,r_idx = select_runners(game, player, outcome, i)
-        is_valid_runner(game, outcome, c_idx, r_idx, player.id)
-        add_positions!(game, c_idx, r_idx)
+        is_valid_runner(game, outcome, c_idx, r_idx, id)
+        cache_positions!(game, c_idx, r_idx)
         add_runners!(game, c_idx, r_idx)
+        add_pieces_to_reserve!(game, id, c_idx, r_idx)
     end
     return nothing
 end
@@ -73,11 +76,12 @@ function decision_phase!(game::AbstractGame, player::AbstractPlayer)
         risk_it = take_chance(game, player)
         risk_it ? nothing : (set_pieces!(game, player.id); break) 
         outcome = roll(game.dice)
-        is_bust(game, outcome) ? (clear_runners!(game); break) : nothing
+        is_bust(game, outcome) ? (handle_bust!(game, player.id); break) : nothing
         c_idx, r_idx = select_positions(game, player, outcome)
         is_valid_move(game, outcome, c_idx, r_idx)
         move!(game, c_idx, r_idx)
     end
+    return nothing
 end
 
 roll(dice) = rand(1:dice.sides, dice.n)
@@ -149,6 +153,9 @@ function is_valid_runner(game, outcome, c_idx, rows, player_id)
     if !is_in_range(game, c_idx)
         error("$c_idx not in range")
     end
+    if !sufficient_pieces(game, length(c_idx), player_id)
+        error("Insufficent pieces remaining. Use active piece.")
+    end
     if !is_combination(outcome, c_idx)
         error("$c_idx is not a valid pair for $outcome")
     end
@@ -159,6 +166,10 @@ function is_valid_runner(game, outcome, c_idx, rows, player_id)
         error("rows $rows are not valid")
     end
     return true
+end
+
+function sufficient_pieces(game::AbstractGame, n, player_id)
+    return length(game.pieces[player_id]) ≥ n
 end
 
 function is_valid_move(game, outcome, c_idx, r_idx, player_id)
@@ -279,15 +290,30 @@ function clear_runners!(game)
     return nothing
 end
 
+function return_to_reserve!(game, player_id)
+    for p ∈ 1:length(game.piece_reserve)
+        piece = pop!(game.piece_reserve)
+        push!(game.pieces[player_id], piece) 
+    end
+    return nothing
+end
+
+function handle_bust!(game, player_id)
+    clear_runners!(game)
+    return_to_reserve!(game, player_id)
+    return nothing
+end
+
 function cleanup!(game)
     empty!(game.r_idx)
     empty!(game.c_idx)
+    empty!(game.piece_reserve)
     return nothing
 end
 
 next(idx, n) = idx == n ? 1 : idx += 1
 
-function add_positions!(game::AbstractGame, c_idx, r_idx)
+function cache_positions!(game::AbstractGame, c_idx, r_idx)
     push!(game.c_idx, c_idx...)
     push!(game.r_idx, r_idx...)
     return nothing 
@@ -325,6 +351,26 @@ Lists all unique sum of combinations of the outcome of rolling dice
 - `outcome`: the results of rolling the dice
 """
 list_sums(game, outcome) = unique(sum.(combinations(outcome, 2)))
+
+function initialize_pieces!(game::AbstractGame, players)
+    map(p -> initialize_pieces!(game, p), players)
+    return nothing
+end
+
+function initialize_pieces!(game::AbstractGame, p::AbstractPlayer)
+    game.pieces[p.id] = fill(p.id, 12)
+    return nothing
+end
+
+function add_pieces_to_reserve!(game, player_id, c_idx, r_idx)
+    for i ∈ 1:length(c_idx)
+        if r_idx[i] == 1
+            piece = pop!(game.pieces[player_id])
+            push!(game.piece_reserve, piece)
+        end
+    end
+    return nothing
+end
 
 """
     get_runner_locations(game)
