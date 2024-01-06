@@ -47,11 +47,11 @@ The function `select_runners!` is called during this phase.
 - `game::AbstractGame`: an abstract game object 
 - `player::AbstractPlayer`: an subtype of a abstract player
 """
-function runner_selection_phase!(game::AbstractGame, player::AbstractPlayer)
+function runner_selection_phase!(game::G, player::AbstractPlayer) where {G <: AbstractGame}
     id = player.id
     for i ∈ 1:2
         outcome = roll(game.dice)
-        c_idx,r_idx = select_runners(game, player, outcome, i)
+        c_idx,r_idx = select_runners(game, player, get_board(game), outcome, i)
         is_valid_runner(game, outcome, c_idx, r_idx, id)
         cache_positions!(game, c_idx, r_idx)
         add_runners!(game, c_idx, r_idx)
@@ -71,13 +71,13 @@ moving the runners. The two methods named `decide!` are called during this phase
 - `game::AbstractGame`: an abstract game object 
 - `player::AbstractPlayer`: an subtype of a abstract player
 """
-function decision_phase!(game::AbstractGame, player::AbstractPlayer)
+function decision_phase!(game::G, player::AbstractPlayer) where {G<:AbstractGame}
     while true
-        risk_it = take_chance(game, player)
+        risk_it = take_chance(G, player)
         risk_it ? nothing : (set_pieces!(game, player.id); break) 
         outcome = roll(game.dice)
         is_bust(game, outcome) ? (handle_bust!(game, player.id); break) : nothing
-        c_idx, r_idx = select_positions(game, player, outcome)
+        c_idx, r_idx = select_positions(G, player, get_board(game), outcome)
         is_valid_move(game, outcome, c_idx, r_idx)
         move!(game, c_idx, r_idx)
     end
@@ -98,7 +98,7 @@ Move runner to location determined by column and row index
 - `r_idx`: row index
 """
 function move!(game::AbstractGame, c_idx, r_idx)
-    column = game.columns[c_idx]
+    column = game.board[c_idx]
     filter!(x -> x ≠ :_runner, column[r_idx-1])
     push!(column[r_idx], :_runner)
     return nothing 
@@ -112,7 +112,7 @@ function get_location(column, player_id)
 end
 
 """
-    is_combination(outcome, columns)
+    is_combination(outcome, c_idx)
 
 Tests whether columns are a possible some of dice outcome.
 
@@ -137,17 +137,17 @@ end
 
 is_bust(outcome, c_idx; fun=any) = !is_combination(outcome, c_idx; fun)
 
-function is_valid_runner(game, outcome, c_idx, rows, player_id)
+function is_valid_runner(game, outcome, c_idx, r_idx, player_id)
     if isempty(c_idx)
         error("columns cannot be empty")
     end 
-    if isempty(rows)
+    if isempty(r_idx)
         error("rows cannot be empty")
     end 
-    if length(rows) ≠ length(c_idx)
+    if length(r_idx) ≠ length(c_idx)
         error("columns and rows do not have the same length")
     end
-    if length(rows) > 2
+    if length(r_idx) > 2
         error("length of rows cannot exceed 2")
     end
     if !is_in_range(game, c_idx)
@@ -162,8 +162,8 @@ function is_valid_runner(game, outcome, c_idx, rows, player_id)
     if has_been_won(game, c_idx)
         error("$c_idx has been won")
     end
-    if !rows_are_valid(game, c_idx, rows, player_id)
-        error("rows $rows are not valid")
+    if !rows_are_valid(game, c_idx, r_idx, player_id)
+        error("rows $r_idx are not valid")
     end
     return true
 end
@@ -193,7 +193,7 @@ end
 
 function has_been_won(game, c_idx)
     for c ∈ c_idx 
-        column = game.columns[c]
+        column = game.board[c]
         isempty(column[end]) ? (continue) : (return true)
     end
     return false
@@ -212,9 +212,9 @@ function rows_are_valid(game, c_idx, rows, player_id)
     for i ∈ 1:n 
         if rows[i] == 1
             break 
-        elseif rows[i] > length(game.columns[c_idx[i]])
+        elseif rows[i] > length(game.board[c_idx[i]])
             return false 
-        elseif player_id ∉ game.columns[c_idx[i]][rows[i]-1] 
+        elseif player_id ∉ game.board[c_idx[i]][rows[i]-1] 
             return false
         end
     end
@@ -233,12 +233,12 @@ end
 # Arguments
 
 - `game::AbstractGame`: an abstract game object 
-- `player::AbstractPlayer`: an subtype of a abstract player
+- `player_id::Symbol`: id of player
 """
 function remove_pieces!(game::AbstractGame, player_id)
-    (;r_idx,c_idx,columns) = game 
+    (;r_idx,c_idx,board) = game 
     for (c,r) ∈ zip(c_idx, r_idx)
-        row = columns[c][r]
+        row = board[c][r]
         idx = findfirst(x -> x == player_id, row)
         isnothing(idx) ? nothing : deleteat!(row, idx)
     end
@@ -256,7 +256,7 @@ Replaces runners with player_id.
 - `player::AbstractPlayer`: an subtype of a abstract player
 """
 function replace_runners!(game::AbstractGame, player_id)
-    for c ∈ values(game.columns)
+    for c ∈ values(game.board)
         for r ∈ c 
             replace!(r, :_runner => player_id)
         end
@@ -265,7 +265,7 @@ end
 
 function is_over(game)
     ids = Symbol[]
-    for c ∈ values(game.columns)
+    for c ∈ values(game.board)
         push!(ids, unique(c[end])...)
     end
     counts = map(x -> count(y -> x == y, ids), unique(ids))
@@ -282,7 +282,7 @@ Clear runners from board following a bust.
 - `game::AbstractGame`: an abstract game object 
 """
 function clear_runners!(game) 
-    for c ∈ values(game.columns)
+    for c ∈ values(game.board)
         for r ∈ c 
             filter!(x -> x ≠ :_runner, r)
         end
@@ -321,7 +321,7 @@ end
 
 function add_runners!(game::AbstractGame, c_idx, r_idx)
     for i ∈ 1:length(r_idx)
-        push!(game.columns[c_idx[i]][r_idx[i]], :_runner)
+        push!(game.board[c_idx[i]][r_idx[i]], :_runner)
     end
     return nothing
 end
@@ -373,6 +373,17 @@ function add_pieces_to_reserve!(game, player_id, c_idx, r_idx)
 end
 
 """
+    get_board(game::AbstractGame)
+
+Returns a copy of the board. 
+
+# Arguments
+
+- `game::AbstractGame`: an abstract game object 
+"""
+get_board(game::AbstractGame) = deepcopy(game.board)
+
+"""
     get_runner_locations(game)
 
 Returns runner locations. 
@@ -389,10 +400,41 @@ Returns runner locations.
 function get_runner_locations(game)
     c_idx = Int[]
     r_idx = Int[]
-    columns = game.columns
-    for c ∈ keys(columns)
-        for r ∈ 1:length(columns[c])
-            if :_runner ∈ columns[c][r]
+    board = game.board
+    for c ∈ keys(board)
+        for r ∈ 1:length(board[c])
+            if :_runner ∈ board[c][r]
+                push!(c_idx, c)
+                push!(r_idx, r)
+                length(c_idx) == 3 ? (return c_idx, r_idx) : nothing
+            end
+        end
+    end
+    return c_idx, r_idx
+end
+
+"""
+    get_active_locations(game, player_id)
+
+Returns the location of active pieces, which includes runners. 
+
+# Arguments
+
+- `game::AbstractGame`: an abstract game object 
+- `player_id::Symbol`: id of player
+
+# Returns 
+
+- `c_idx`: column indices
+- `r_idx`: row indices
+"""
+function get_active_locations(game, player_id)
+    c_idx = Int[]
+    r_idx = Int[]
+    board = game.board
+    for c ∈ keys(board)
+        for r ∈ 1:length(board[c])
+            if :_runner ∈ board[c][r] || player_id ∈ board[c][r]
                 push!(c_idx, c)
                 push!(r_idx, r)
                 length(c_idx) == 3 ? (return c_idx, r_idx) : nothing

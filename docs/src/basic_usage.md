@@ -3,8 +3,6 @@ using CantStop
 import CantStop: select_positions
 import CantStop: select_runners
 import CantStop: take_chance
-
-
 ```
 
 # Introduction 

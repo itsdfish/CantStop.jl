@@ -15,6 +15,7 @@ An abstract type for a player. Subtypes of `AbstractPlayer` must have the fields
 # Fields
 
 - `id::Symbol`: player id
+- `pieces::Vector{Symbol}`: a vector of 12 pieces where each piece has the value `id`. 
 
 In addition, for a subtype `MyPlayer <: AbstractPlayer`, the API requires the following constructor to ensure 
 the correct number of pieces are provided. 
@@ -22,7 +23,7 @@ the correct number of pieces are provided.
 # Constructor
 
 ```julia 
-MyPlayer(;id) = MyPlayer(id)
+MyPlayer(;id, pieces=fill(id, 12)) = MyPlayer(id, pieces)
 ```
 """
 abstract type AbstractPlayer end 
@@ -37,7 +38,7 @@ The following fields are required in order to work with default methods:
 # Fields 
 
 - `dice::Dice`: an object resepresenting four dice 
-- `columns::Dict{Int,T}`: a dictionary representing columns 2-12. Each column is a vector of symbol vectors which contain the player ids 
+- `board::Dict{Int,T}`: a dictionary representing columns 2-12. Each column is a vector of symbol vectors which contain the player ids 
 - `c_idx::Vector{Int}`: column indices of starting position of active piece 
 - `r_idx::Vector{Int}`: row indices of starting position of active pieace
 - `pieces::Dict{Symbol,Vector{Symbol}}`: inactive pieces for each player: `player_id -> pieces`
@@ -58,18 +59,18 @@ abstract type AbstractGame end
 """
 mutable struct Game{T} <: AbstractGame
     dice::Dice 
-    columns::Dict{Int,T}
+    board::Dict{Int,T}
     c_idx::Vector{Int}
     r_idx::Vector{Int}
     pieces::Dict{Symbol,Vector{Symbol}}
     piece_reserve::Vector{Symbol}
 end
 
-function Game(;dice=Dice(), columns=make_columns())
-    return Game(dice, columns, Int[], Int[], Dict{Symbol,Vector{Symbol}}(), Symbol[])
+function Game(;dice=Dice(), board=make_board())
+    return Game(dice, board, Int[], Int[], Dict{Symbol,Vector{Symbol}}(), Symbol[])
 end
 
-function make_columns()
+function make_board()
     spaces = [3,5,7,9,11,13,11,9,7,5,3]
     return Dict(i => [Symbol[] for _ ∈ 1:spaces[i-1]] for i ∈ 2:12)
 end

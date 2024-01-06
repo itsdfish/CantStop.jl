@@ -5,22 +5,22 @@ using SafeTestsets
     using Test
 
     outcome = [1,2,3,4]
-    columns = [3,4]
+    c_idx = [3,4]
 
-    @test is_combination(outcome, columns; fun = any)
-    @test is_combination(outcome, columns; fun = all)
-
-    outcome = [1,2,3,4]
-    columns = [3,40]
-
-    @test is_combination(outcome, columns; fun = any)
-    @test !is_combination(outcome, columns; fun = all)
+    @test is_combination(outcome, c_idx; fun = any)
+    @test is_combination(outcome, c_idx; fun = all)
 
     outcome = [1,2,3,4]
-    columns = [20,40]
+    c_idx = [3,40]
 
-    @test !is_combination(outcome, columns; fun = any)
-    @test !is_combination(outcome, columns; fun = all)
+    @test is_combination(outcome, c_idx; fun = any)
+    @test !is_combination(outcome, c_idx; fun = all)
+
+    outcome = [1,2,3,4]
+    c_idx = [20,40]
+
+    @test !is_combination(outcome, c_idx; fun = any)
+    @test !is_combination(outcome, c_idx; fun = all)
 end
 
 @safetestset "is_bust" begin
@@ -28,19 +28,19 @@ end
     using Test
 
     outcome = [1,2,3,4]
-    columns = [3,4]
+    c_idx = [3,4]
 
-    @test !is_bust(outcome, columns)
-
-    outcome = [1,2,3,4]
-    columns = [30,40]
-
-    @test is_bust(outcome, columns)
+    @test !is_bust(outcome, c_idx)
 
     outcome = [1,2,3,4]
-    columns = [1,30]
+    c_idx = [30,40]
 
-    @test is_bust(outcome, columns)
+    @test is_bust(outcome, c_idx)
+
+    outcome = [1,2,3,4]
+    c_idx = [1,30]
+
+    @test is_bust(outcome, c_idx)
 end
 
 @safetestset "is_valid_runner" begin
@@ -52,15 +52,15 @@ end
 
         game = Game()
         
-        push!(game.columns[2][end], :player)
+        push!(game.board[2][end], :player)
         outcome = [1,2,3,4]
-        columns = [2]
+        c_idx = [2]
         rows = [1,2]
         player_id = :player 
         game.pieces[player_id] = fill(player_id, 12)
 
         message = ErrorException("columns and rows do not have the same length")
-        @test_throws  message is_valid_runner(game, outcome, columns, rows, player_id)
+        @test_throws  message is_valid_runner(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "column error" begin 
@@ -70,14 +70,14 @@ end
 
         game = Game()
         outcome = [1,2,3,4]
-        columns = []
+        c_idx = []
         rows = [1,2]
         player_id = :player 
         game.pieces[player_id] = fill(player_id, 12)
 
         message = ErrorException("columns cannot be empty")
 
-        @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_runner(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "row empty error" begin 
@@ -87,13 +87,13 @@ end
 
         game = Game()
         outcome = [1,2,3,4]
-        columns = [3,7]
+        c_idx = [3,7]
         rows = []
         player_id = :player 
         game.pieces[player_id] = fill(player_id, 12)
         message = ErrorException("rows cannot be empty")
 
-        @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_runner(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "not in range" begin 
@@ -103,14 +103,14 @@ end
 
         game = Game()
         outcome = [1,2,3,4]
-        columns = [13,7]
+        c_idx = [13,7]
         rows = [1,2]
         player_id = :player 
         game.pieces[player_id] = fill(player_id, 12)
 
-        message = ErrorException("$columns not in range") 
+        message = ErrorException("$c_idx not in range") 
 
-        @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_runner(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "not in range" begin 
@@ -120,14 +120,14 @@ end
 
         game = Game()
         outcome = [1,2,3,4]
-        columns = [2,7]
+        c_idx = [2,7]
         rows = [1,2]
         player_id = :player 
         game.pieces[player_id] = fill(player_id, 12)
 
-        message = ErrorException("$columns is not a valid pair for $outcome")
+        message = ErrorException("$c_idx is not a valid pair for $outcome")
     
-        @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_runner(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "valid columns" begin 
@@ -136,16 +136,16 @@ end
         using Test
 
         game = Game()
-        push!(game.columns[3][1], :player)
+        push!(game.board[3][1], :player)
         outcome = [1,2,3,4]
-        columns = [3,7]
+        c_idx = [3,7]
         rows = [2,1]
         player_id = :player
         game.pieces[player_id] = fill(player_id, 1)
 
         message = ErrorException("Insufficent pieces remaining. Use active piece.")
     
-        @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_runner(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "has been won" begin 
@@ -154,16 +154,16 @@ end
         using Test
 
         game = Game()
-        push!(game.columns[3][end], :player)
+        push!(game.board[3][end], :player)
         outcome = [1,2,3,4]
-        columns = [3,7]
+        c_idx = [3,7]
         rows = [1,2]
         player_id = :player 
         game.pieces[player_id] = fill(player_id, 12)
 
-        message = ErrorException("$columns has been won")
+        message = ErrorException("$c_idx has been won")
 
-        @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_runner(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "row length too large" begin 
@@ -173,13 +173,13 @@ end
 
         game = Game()
         outcome = [1,2,3,4]
-        columns = [2,7,3]
+        c_idx = [2,7,3]
         rows = [1,2,2]
         player_id = :player
         game.pieces[player_id] = fill(player_id, 12)
 
         message = ErrorException("length of rows cannot exceed 2")
-        @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_runner(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "row out of bounds" begin 
@@ -189,14 +189,14 @@ end
 
         game = Game()
         outcome = [1,2,3,4]
-        columns = [3,7]
+        c_idx = [3,7]
         rows = [4,2]
         player_id = :player
         game.pieces[player_id] = fill(player_id, 12)
 
         message = ErrorException("rows $rows are not valid")
-
-        @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
+        
+        @test_throws message is_valid_runner(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "non-contiguous runner row position" begin 
@@ -206,13 +206,13 @@ end
 
         game = Game()
         outcome = [1,2,3,4]
-        columns = [3,7]
+        c_idx = [3,7]
         rows = [2,2]
         player_id = :player
         game.pieces[player_id] = fill(player_id, 12)
         message = ErrorException("rows $rows are not valid")
 
-        @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_runner(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "wrong player_id" begin 
@@ -221,16 +221,16 @@ end
         using Test
 
         game = Game()
-        push!(game.columns[3][1], :wrong_player)
+        push!(game.board[3][1], :wrong_player)
         outcome = [1,2,3,4]
-        columns = [3,7]
+        c_idx = [3,7]
         rows = [2,2]
         player_id = :player
         game.pieces[player_id] = fill(player_id, 12)
 
         message = ErrorException("rows $rows are not valid")
 
-        @test_throws message is_valid_runner(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_runner(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "valid columns" begin 
@@ -239,14 +239,14 @@ end
         using Test
 
         game = Game()
-        push!(game.columns[3][1], :player)
+        push!(game.board[3][1], :player)
         outcome = [1,2,3,4]
-        columns = [3,7]
+        c_idx = [3,7]
         rows = [2,1]
         player_id = :player
         game.pieces[player_id] = fill(player_id, 12)
 
-        @test is_valid_runner(game, outcome, columns, rows, player_id)
+        @test is_valid_runner(game, outcome, c_idx, rows, player_id)
     end
 end
 
@@ -258,14 +258,14 @@ end
         using Test
 
         game = Game()
-        push!(game.columns[2][end], :player)
+        push!(game.board[2][end], :player)
         outcome = [1,2,3,4]
-        columns = [2]
+        c_idx = [2]
         rows = [1,2]
         player_id = :player 
 
         message = ErrorException("length of row and column indices must be 2")
-        @test_throws  message is_valid_move(game, outcome, columns, rows, player_id)
+        @test_throws  message is_valid_move(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "incorrect row length" begin 
@@ -274,14 +274,14 @@ end
         using Test
 
         game = Game()
-        push!(game.columns[2][end], :player)
+        push!(game.board[2][end], :player)
         outcome = [1,2,3,4]
-        columns = [2,3]
+        c_idx = [2,3]
         rows = [1,2,4]
         player_id = :player 
 
         message = ErrorException("length of row and column indices must be 2")
-        @test_throws  message is_valid_move(game, outcome, columns, rows, player_id)
+        @test_throws  message is_valid_move(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "not in range" begin 
@@ -291,13 +291,13 @@ end
 
         game = Game()
         outcome = [1,2,3,4]
-        columns = [13,7]
+        c_idx = [13,7]
         rows = [1,2]
         player_id = :player 
 
-        message = ErrorException("$columns not in range") 
+        message = ErrorException("$c_idx not in range") 
 
-        @test_throws message is_valid_move(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_move(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "not in range" begin 
@@ -307,13 +307,13 @@ end
 
         game = Game()
         outcome = [1,2,3,4]
-        columns = [2,7]
+        c_idx = [2,7]
         rows = [1,2]
         player_id = :player 
 
-        message = ErrorException("$columns is not a valid pair for $outcome")
+        message = ErrorException("$c_idx is not a valid pair for $outcome")
     
-        @test_throws message is_valid_move(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_move(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "has been won" begin 
@@ -322,15 +322,15 @@ end
         using Test
 
         game = Game()
-        push!(game.columns[3][end], :player)
+        push!(game.board[3][end], :player)
         outcome = [1,2,3,4]
-        columns = [3,7]
+        c_idx = [3,7]
         rows = [1,2]
         player_id = :player 
 
-        message = ErrorException("$columns has been won")
+        message = ErrorException("$c_idx has been won")
 
-        @test_throws message is_valid_move(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_move(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "row out of bounds" begin 
@@ -340,12 +340,12 @@ end
 
         game = Game()
         outcome = [1,2,3,4]
-        columns = [3,7]
+        c_idx = [3,7]
         rows = [4,2]
         player_id = :player
         message = ErrorException("rows $rows are not valid")
 
-        @test_throws message is_valid_move(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_move(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "non-contiguous runner row position" begin 
@@ -355,12 +355,12 @@ end
 
         game = Game()
         outcome = [1,2,3,4]
-        columns = [3,7]
+        c_idx = [3,7]
         rows = [2,2]
         player_id = :player
         message = ErrorException("rows $rows are not valid")
 
-        @test_throws message is_valid_move(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_move(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "wrong player_id" begin 
@@ -369,14 +369,14 @@ end
         using Test
 
         game = Game()
-        push!(game.columns[3][1], :wrong_player)
+        push!(game.board[3][1], :wrong_player)
         outcome = [1,2,3,4]
-        columns = [3,7]
+        c_idx = [3,7]
         rows = [2,2]
         player_id = :player
         message = ErrorException("rows $rows are not valid")
 
-        @test_throws message is_valid_move(game, outcome, columns, rows, player_id)
+        @test_throws message is_valid_move(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "valid columns" begin 
@@ -385,13 +385,13 @@ end
         using Test
 
         game = Game()
-        push!(game.columns[3][1], :player)
+        push!(game.board[3][1], :player)
         outcome = [1,2,3,4]
-        columns = [3,7]
+        c_idx = [3,7]
         rows = [2,1]
         player_id = :player
 
-        @test is_valid_move(game, outcome, columns, rows, player_id)
+        @test is_valid_move(game, outcome, c_idx, rows, player_id)
     end
 end
 
@@ -403,15 +403,15 @@ end
     game = Game()
     c_idx = 3
     r_idx = 2
-    column = game.columns[3]
+    column = game.board[3]
     push!(column[1], :_runner)
     move!(game, c_idx, r_idx)
 
     for i ∈ 1:length(column)
         if i == r_idx 
-            @test :_runner ∈ game.columns[c_idx][i]
+            @test :_runner ∈ game.board[c_idx][i]
         else
-            @test :_runner ∉ game.columns[c_idx][i]
+            @test :_runner ∉ game.board[c_idx][i]
         end
     end
 end
@@ -425,26 +425,26 @@ end
     player_id = :player
     c_idx = 3
     r_idx = 2
-    columns = game.columns
+    board = game.board
 
-    push!(columns[c_idx][r_idx], :_runner)
+    push!(board[c_idx][r_idx], :_runner)
     push!(game.c_idx, c_idx)
     push!(game.r_idx, r_idx)
 
     c_idx1 = 4
     r_idx1 = 5
-    push!(columns[c_idx1][r_idx1], player_id)
+    push!(board[c_idx1][r_idx1], player_id)
 
     replace_runners!(game, player_id)
 
-    for c ∈ keys(columns)
-        for r ∈ 1:length(columns[c])
+    for c ∈ keys(board)
+        for r ∈ 1:length(board[c])
             if (r == r_idx) && (c == c_idx)
-                @test player_id ∈ columns[c][r]
+                @test player_id ∈ board[c][r]
             elseif (r == r_idx1) && (c == c_idx1)
-                @test player_id ∈ columns[c][r]
+                @test player_id ∈ board[c][r]
             else
-                @test :_runner ∉ columns[c][r]
+                @test :_runner ∉ board[c][r]
             end
         end
     end
@@ -459,25 +459,25 @@ end
     player_id = :player
     c_idx = 3
     r_idx = 2
-    columns = game.columns
+    board = game.board
 
-    push!(columns[c_idx][r_idx], player_id)
+    push!(board[c_idx][r_idx], player_id)
     push!(game.c_idx, c_idx)
     push!(game.r_idx, r_idx)
 
     c_idx1 = 4
     r_idx1 = 5
     player_id1 = :player1
-    push!(columns[c_idx1][r_idx1], player_id1)
+    push!(board[c_idx1][r_idx1], player_id1)
 
     remove_pieces!(game, player_id)
 
-    for c ∈ keys(columns)
-        for r ∈ 1:length(columns[c])
+    for c ∈ keys(board)
+        for r ∈ 1:length(board[c])
             if (r == r_idx1) && (c == c_idx1)
-                @test player_id1 ∈ columns[c][r]
+                @test player_id1 ∈ board[c][r]
             else
-                @test player_id ∉ columns[c][r]
+                @test player_id ∉ board[c][r]
             end
         end
     end
@@ -502,11 +502,11 @@ end
         using Test
 
         game = Game()
-        columns = game.columns 
+        board = game.board 
 
-        push!(columns[2][end], :player1)
-        push!(columns[3][end], :player1)
-        push!(columns[4][end], :player1)
+        push!(board[2][end], :player1)
+        push!(board[3][end], :player1)
+        push!(board[4][end], :player1)
 
         @test is_over(game)
     end
@@ -517,11 +517,11 @@ end
         using Test
 
         game = Game()
-        columns = game.columns 
+        board = game.board 
 
-        push!(columns[2][end], :player1)
-        push!(columns[3][end-1], :player1)
-        push!(columns[4][end], :player1)
+        push!(board[2][end], :player1)
+        push!(board[3][end-1], :player1)
+        push!(board[4][end], :player1)
 
         @test !is_over(game)
     end
@@ -532,11 +532,11 @@ end
         using Test
 
         game = Game()
-        columns = game.columns 
+        board = game.board 
 
-        push!(columns[3][end], :player1)
-        push!(columns[3][end], :player1)
-        push!(columns[4][end], :player3)
+        push!(board[3][end], :player1)
+        push!(board[3][end], :player1)
+        push!(board[4][end], :player3)
 
         @test !is_over(game)
     end

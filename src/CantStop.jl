@@ -8,6 +8,7 @@ module CantStop
     export Game 
 
     export get_runner_locations
+    export get_active_locations
     export list_sums
     export select_positions
     export select_runners
