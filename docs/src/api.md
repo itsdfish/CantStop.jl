@@ -16,9 +16,11 @@ AbstractGame
 # Required Methods
 
 ```@docs 
-CantStop.select_runners
-CantStop.take_chance
-CantStop.select_positions
+select_runners
+take_chance
+select_positions
+postbust_cleanup!
+poststop_cleanup!
 ```
 
 # Available Types 
@@ -32,4 +34,5 @@ Game
 simulate
 list_sums
 get_runner_locations
+get_active_locations
 ```

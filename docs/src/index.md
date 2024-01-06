@@ -1,3 +1,7 @@
-# CantStop.jl
+# CantStop
 
-Documentation for CantStop.jl
+## Overview
+
+## Basic Rules
+
+

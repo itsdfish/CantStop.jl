@@ -52,7 +52,7 @@ abstract type AbstractGame end
 # Fields 
 
 - `dice::Dice`: an object resepresenting four dice 
-- `columns::Dict{Int,T}`: a dictionary representing columns 2-12. Each column is a vector of symbol vectors which contain the player ids 
+- `board::Dict{Int,T}`: a dictionary representing columns 2-12. Each row in a column is a vector of symbols which contain the player ids 
 - `c_idx::Vector{Int}`: column indices of starting position of active piece 
 - `r_idx::Vector{Int}`: row indices of starting position of active pieace
 - `pieces::Dict{Symbol,Vector{Symbol}}`: inactive pieces for each player: `player_id -> pieces`

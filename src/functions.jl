@@ -32,7 +32,7 @@ Play one round with a specified player.
 function play_round!(game::AbstractGame, player::AbstractPlayer)
     runner_selection_phase!(game, player)
     decision_phase!(game, player)
-    cleanup!(game)
+    cleanup!(game, player)
     return nothing
 end
 
@@ -51,7 +51,7 @@ function runner_selection_phase!(game::G, player::AbstractPlayer) where {G <: Ab
     id = player.id
     for i ∈ 1:2
         outcome = roll(game.dice)
-        c_idx,r_idx = select_runners(game, player, get_board(game), outcome, i)
+        c_idx,r_idx = select_runners(G, player, get_board(game), outcome, i)
         is_valid_runner(game, outcome, c_idx, r_idx, id)
         cache_positions!(game, c_idx, r_idx)
         add_runners!(game, c_idx, r_idx)
@@ -73,10 +73,10 @@ moving the runners. The two methods named `decide!` are called during this phase
 """
 function decision_phase!(game::G, player::AbstractPlayer) where {G<:AbstractGame}
     while true
-        risk_it = take_chance(G, player)
-        risk_it ? nothing : (set_pieces!(game, player.id); break) 
+        risk_it = take_chance(G, player, get_board(game))
+        risk_it ? nothing : (handle_stop!(game, player); break) 
         outcome = roll(game.dice)
-        is_bust(game, outcome) ? (handle_bust!(game, player.id); break) : nothing
+        is_bust(game, outcome) ? (handle_bust!(game, player); break) : nothing
         c_idx, r_idx = select_positions(G, player, get_board(game), outcome)
         is_valid_move(game, outcome, c_idx, r_idx)
         move!(game, c_idx, r_idx)
@@ -131,7 +131,7 @@ function is_combination(outcome, c_idx; fun=all)
 end
 
 function is_bust(game::AbstractGame, outcome; fun=any)
-    c_idx = get_runner_locations(game)
+    c_idx = get_runner_locations(game.board)
     return is_bust(outcome, c_idx; fun)
 end
 
@@ -261,6 +261,7 @@ function replace_runners!(game::AbstractGame, player_id)
             replace!(r, :_runner => player_id)
         end
     end
+    return nothing
 end
 
 function is_over(game)
@@ -298,17 +299,24 @@ function return_to_reserve!(game, player_id)
     return nothing
 end
 
-function handle_bust!(game, player_id)
+function handle_bust!(game::G, player::AbstractPlayer) where {G<:AbstractGame}
+    postbust_cleanup!(G, player)
     clear_runners!(game)
-    return_to_reserve!(game, player_id)
+    return_to_reserve!(game, player.id)
     return nothing
 end
 
-function cleanup!(game)
+function cleanup!(game::G, player::AbstractPlayer) where {G<:AbstractGame}
     empty!(game.r_idx)
     empty!(game.c_idx)
     empty!(game.piece_reserve)
     return nothing
+end
+
+function handle_stop!(game::G, player::AbstractPlayer) where {G<:AbstractGame}   
+    poststop_cleanup!(G, player)
+    set_pieces!(game, player.id)
+    return nothing 
 end
 
 next(idx, n) = idx == n ? 1 : idx += 1
@@ -339,18 +347,6 @@ Perform initial setup after cards are delt, but before the game begins.
 function setup!(player::AbstractPlayer, ids)
     # intentionally blank
 end
-
-"""
-    list_sums(game::AbstractGame, outcome)
-
-Lists all unique sum of combinations of the outcome of rolling dice
-
-# Arguments
-
-- `game::AbstractGame`: an abstract game object 
-- `outcome`: the results of rolling the dice
-"""
-list_sums(game, outcome) = unique(sum.(combinations(outcome, 2)))
 
 function initialize_pieces!(game::AbstractGame, players)
     map(p -> initialize_pieces!(game, p), players)
@@ -383,63 +379,3 @@ Returns a copy of the board.
 """
 get_board(game::AbstractGame) = deepcopy(game.board)
 
-"""
-    get_runner_locations(game)
-
-Returns runner locations. 
-
-# Arguments
-
-- `game::AbstractGame`: an abstract game object 
-
-# Returns 
-
-- `c_idx`: column indices
-- `r_idx`: row indices
-"""
-function get_runner_locations(game)
-    c_idx = Int[]
-    r_idx = Int[]
-    board = game.board
-    for c ∈ keys(board)
-        for r ∈ 1:length(board[c])
-            if :_runner ∈ board[c][r]
-                push!(c_idx, c)
-                push!(r_idx, r)
-                length(c_idx) == 3 ? (return c_idx, r_idx) : nothing
-            end
-        end
-    end
-    return c_idx, r_idx
-end
-
-"""
-    get_active_locations(game, player_id)
-
-Returns the location of active pieces, which includes runners. 
-
-# Arguments
-
-- `game::AbstractGame`: an abstract game object 
-- `player_id::Symbol`: id of player
-
-# Returns 
-
-- `c_idx`: column indices
-- `r_idx`: row indices
-"""
-function get_active_locations(game, player_id)
-    c_idx = Int[]
-    r_idx = Int[]
-    board = game.board
-    for c ∈ keys(board)
-        for r ∈ 1:length(board[c])
-            if :_runner ∈ board[c][r] || player_id ∈ board[c][r]
-                push!(c_idx, c)
-                push!(r_idx, r)
-                length(c_idx) == 3 ? (return c_idx, r_idx) : nothing
-            end
-        end
-    end
-    return c_idx, r_idx
-end

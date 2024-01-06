@@ -1,7 +1,9 @@
 ```@setup example
 using CantStop
-import CantStop: select_positions
+import CantStop: postbust_cleanup!
+import CantStop: poststop_cleanup!
 import CantStop: select_runners
+import CantStop: select_positions
 import CantStop: take_chance
 ```
 
@@ -14,8 +16,10 @@ import CantStop: take_chance
 
 ```@example example
 using CantStop
-import CantStop: select_positions
+import CantStop: postbust_cleanup!
+import CantStop: poststop_cleanup!
 import CantStop: select_runners
+import CantStop: select_positions
 import CantStop: take_chance
 ```
 
