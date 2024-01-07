@@ -139,8 +139,8 @@ Returns the location of active pieces, which includes runners.
 
 # Returns 
 
-- `c_idx`: column indices
-- `r_idx`: row indices
+- `c_idx`: column indices of active positions
+- `r_idx`: row indices of active positions
 """
 function get_active_locations(board, player_id)
     c_idx = Int[]
@@ -167,3 +167,98 @@ Lists all unique sum of combinations of the outcome of rolling dice
 - `outcome`: the results of rolling the dice
 """
 list_sums(outcome) = unique(sum.(combinations(outcome, 2)))
+
+"""
+    is_valid_move(game, outcome, c_idx, r_idx, player_id)
+
+Evaluates whether a proposed move is valid.
+
+# Arguments
+
+- `board::Dict{Int,T}`: a dictionary representing columns 2-12. Each row in a column is a vector of symbols which contain the player ids 
+- `outcome`: the results of rolling the dice
+- `c_idx`: column indices of proposed positions
+- `r_idx`: row indices of proposed positions
+- `player_id`: id of player
+"""
+function is_valid_move(board, outcome, c_idx, r_idx, player_id)
+    if length(r_idx) ≠ 2 || length(c_idx) ≠ 2
+        return false
+    end
+    if !is_in_range(c_idx)
+        return false
+    end
+    if !is_combination(outcome, c_idx)
+        return false
+    end
+    if has_been_won(board, c_idx)
+        return false
+    end
+    if !rows_are_valid(board, c_idx, r_idx, player_id)
+        return false
+    end
+    return true
+end
+
+
+"""
+    is_valid_runner(board, outcome, c_idx, r_idx, player_id)
+
+Evaluates whether a proposed runner is valid.
+
+# Arguments
+
+- `board::Dict{Int,T}`: a dictionary representing columns 2-12. Each row in a column is a vector of symbols which contain the player ids 
+- `outcome`: the results of rolling the dice
+- `c_idx`: column indices of proposed positions
+- `r_idx`: row indices of proposed positions
+- `player_id`: id of player
+"""
+function is_valid_runner(board, outcome, c_idx, r_idx, player_id)
+    (;board) = game
+    if isempty(c_idx)
+        return false
+    end 
+    if isempty(r_idx)
+        return false
+    end 
+    if length(r_idx) ≠ length(c_idx)
+        return false
+    end
+    if length(r_idx) > 2
+        return false
+    end
+    if !is_in_range(c_idx)
+        return false
+    end
+    if !is_combination(outcome, c_idx)
+        return false
+    end
+    if has_been_won(board, c_idx)
+        return false
+    end
+    if !rows_are_valid(board, c_idx, r_idx, player_id)
+        return false
+    end
+    return true
+end
+
+"""
+    reserve_piece!(player::AbstractPlayer)
+
+Tranfer piece to reserve for bookkeeping. 
+
+# Arguments
+
+- `player::AbstractPlayer`: an object which is a subtype of `AbstractPlayer`
+"""
+function reserve_piece!(player::AbstractPlayer)
+    push!(player.piece_reserve, pop!(player.pieces))
+    return nothing
+end
+# function get_location(column, player_id)
+#     for c ∈ 1:length(column) 
+#         player_id ∈ column[c] ? (return c) : nothing 
+#     end
+#     return 0 
+# end

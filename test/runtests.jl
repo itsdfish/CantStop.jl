@@ -43,11 +43,11 @@ end
     @test is_bust(outcome, c_idx)
 end
 
-@safetestset "is_valid_runner" begin
+@safetestset "validate_runner" begin
 
     @safetestset "unequal length" begin 
         using CantStop
-        using CantStop: is_valid_runner
+        using CantStop: validate_runner
         using Test
 
         game = Game()
@@ -60,12 +60,12 @@ end
         game.pieces[player_id] = fill(player_id, 12)
 
         message = ErrorException("columns and rows do not have the same length")
-        @test_throws  message is_valid_runner(game, outcome, c_idx, rows, player_id)
+        @test_throws  message validate_runner(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "column error" begin 
         using CantStop
-        using CantStop: is_valid_runner
+        using CantStop: validate_runner
         using Test
 
         game = Game()
@@ -77,12 +77,12 @@ end
 
         message = ErrorException("columns cannot be empty")
 
-        @test_throws message is_valid_runner(game, outcome, c_idx, rows, player_id)
+        @test_throws message validate_runner(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "row empty error" begin 
         using CantStop
-        using CantStop: is_valid_runner
+        using CantStop: validate_runner
         using Test
 
         game = Game()
@@ -93,12 +93,12 @@ end
         game.pieces[player_id] = fill(player_id, 12)
         message = ErrorException("rows cannot be empty")
 
-        @test_throws message is_valid_runner(game, outcome, c_idx, rows, player_id)
+        @test_throws message validate_runner(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "not in range" begin 
         using CantStop
-        using CantStop: is_valid_runner
+        using CantStop: validate_runner
         using Test
 
         game = Game()
@@ -110,12 +110,12 @@ end
 
         message = ErrorException("$c_idx not in range") 
 
-        @test_throws message is_valid_runner(game, outcome, c_idx, rows, player_id)
+        @test_throws message validate_runner(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "not in range" begin 
         using CantStop
-        using CantStop: is_valid_runner
+        using CantStop: validate_runner
         using Test
 
         game = Game()
@@ -127,12 +127,12 @@ end
 
         message = ErrorException("$c_idx is not a valid pair for $outcome")
     
-        @test_throws message is_valid_runner(game, outcome, c_idx, rows, player_id)
+        @test_throws message validate_runner(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "valid columns" begin 
         using CantStop
-        using CantStop: is_valid_runner
+        using CantStop: validate_runner
         using Test
 
         game = Game()
@@ -145,12 +145,12 @@ end
 
         message = ErrorException("Insufficent pieces remaining. Use active piece.")
     
-        @test_throws message is_valid_runner(game, outcome, c_idx, rows, player_id)
+        @test_throws message validate_runner(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "has been won" begin 
         using CantStop
-        using CantStop: is_valid_runner
+        using CantStop: validate_runner
         using Test
 
         game = Game()
@@ -163,12 +163,12 @@ end
 
         message = ErrorException("$c_idx has been won")
 
-        @test_throws message is_valid_runner(game, outcome, c_idx, rows, player_id)
+        @test_throws message validate_runner(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "row length too large" begin 
         using CantStop
-        using CantStop: is_valid_runner
+        using CantStop: validate_runner
         using Test
 
         game = Game()
@@ -179,12 +179,12 @@ end
         game.pieces[player_id] = fill(player_id, 12)
 
         message = ErrorException("length of rows cannot exceed 2")
-        @test_throws message is_valid_runner(game, outcome, c_idx, rows, player_id)
+        @test_throws message validate_runner(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "row out of bounds" begin 
         using CantStop
-        using CantStop: is_valid_runner
+        using CantStop: validate_runner
         using Test
 
         game = Game()
@@ -196,12 +196,12 @@ end
 
         message = ErrorException("rows $rows are not valid")
         
-        @test_throws message is_valid_runner(game, outcome, c_idx, rows, player_id)
+        @test_throws message validate_runner(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "non-contiguous runner row position" begin 
         using CantStop
-        using CantStop: is_valid_runner
+        using CantStop: validate_runner
         using Test
 
         game = Game()
@@ -212,12 +212,12 @@ end
         game.pieces[player_id] = fill(player_id, 12)
         message = ErrorException("rows $rows are not valid")
 
-        @test_throws message is_valid_runner(game, outcome, c_idx, rows, player_id)
+        @test_throws message validate_runner(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "wrong player_id" begin 
         using CantStop
-        using CantStop: is_valid_runner
+        using CantStop: validate_runner
         using Test
 
         game = Game()
@@ -230,12 +230,12 @@ end
 
         message = ErrorException("rows $rows are not valid")
 
-        @test_throws message is_valid_runner(game, outcome, c_idx, rows, player_id)
+        @test_throws message validate_runner(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "valid columns" begin 
         using CantStop
-        using CantStop: is_valid_runner
+        using CantStop: validate_runner
         using Test
 
         game = Game()
@@ -246,15 +246,39 @@ end
         player_id = :player
         game.pieces[player_id] = fill(player_id, 12)
 
-        @test is_valid_runner(game, outcome, c_idx, rows, player_id)
+        @test validate_runner(game, outcome, c_idx, rows, player_id)
+    end
+
+    @safetestset "too many runners" begin 
+        using CantStop
+        using CantStop: validate_runner
+        using CantStop: add_runners!
+        using Test
+    
+        game = Game()
+        push!(game.board[3][1], :player)
+        outcome = [1,2,3,4]
+        c_idx = [3,7]
+        r_idx = [2,1]
+        player_id = :player
+        game.pieces[player_id] = fill(player_id, 12)
+    
+        @test validate_runner(game, outcome, c_idx, r_idx, player_id)
+        add_runners!(game, c_idx, r_idx)
+    
+        outcome = [1,1,2,2]
+        c_idx = [2,4]
+        r_idx = [1,1]
+        message = ErrorException("Too many runners. You may only have 3 runners.")
+        @test_throws message validate_runner(game, outcome, c_idx, r_idx, player_id)
     end
 end
 
-@safetestset "is_valid_move" begin
+@safetestset "validate_move" begin
 
     @safetestset "incorrect column length" begin 
         using CantStop
-        using CantStop: is_valid_move
+        using CantStop: validate_move
         using Test
 
         game = Game()
@@ -265,12 +289,12 @@ end
         player_id = :player 
 
         message = ErrorException("length of row and column indices must be 2")
-        @test_throws  message is_valid_move(game, outcome, c_idx, rows, player_id)
+        @test_throws  message validate_move(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "incorrect row length" begin 
         using CantStop
-        using CantStop: is_valid_move
+        using CantStop: validate_move
         using Test
 
         game = Game()
@@ -281,12 +305,12 @@ end
         player_id = :player 
 
         message = ErrorException("length of row and column indices must be 2")
-        @test_throws  message is_valid_move(game, outcome, c_idx, rows, player_id)
+        @test_throws  message validate_move(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "not in range" begin 
         using CantStop
-        using CantStop: is_valid_move
+        using CantStop: validate_move
         using Test
 
         game = Game()
@@ -297,12 +321,12 @@ end
 
         message = ErrorException("$c_idx not in range") 
 
-        @test_throws message is_valid_move(game, outcome, c_idx, rows, player_id)
+        @test_throws message validate_move(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "not in range" begin 
         using CantStop
-        using CantStop: is_valid_move
+        using CantStop: validate_move
         using Test
 
         game = Game()
@@ -313,12 +337,12 @@ end
 
         message = ErrorException("$c_idx is not a valid pair for $outcome")
     
-        @test_throws message is_valid_move(game, outcome, c_idx, rows, player_id)
+        @test_throws message validate_move(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "has been won" begin 
         using CantStop
-        using CantStop: is_valid_move
+        using CantStop: validate_move
         using Test
 
         game = Game()
@@ -330,12 +354,12 @@ end
 
         message = ErrorException("$c_idx has been won")
 
-        @test_throws message is_valid_move(game, outcome, c_idx, rows, player_id)
+        @test_throws message validate_move(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "row out of bounds" begin 
         using CantStop
-        using CantStop: is_valid_move
+        using CantStop: validate_move
         using Test
 
         game = Game()
@@ -345,12 +369,12 @@ end
         player_id = :player
         message = ErrorException("rows $rows are not valid")
 
-        @test_throws message is_valid_move(game, outcome, c_idx, rows, player_id)
+        @test_throws message validate_move(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "non-contiguous runner row position" begin 
         using CantStop
-        using CantStop: is_valid_move
+        using CantStop: validate_move
         using Test
 
         game = Game()
@@ -360,12 +384,12 @@ end
         player_id = :player
         message = ErrorException("rows $rows are not valid")
 
-        @test_throws message is_valid_move(game, outcome, c_idx, rows, player_id)
+        @test_throws message validate_move(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "wrong player_id" begin 
         using CantStop
-        using CantStop: is_valid_move
+        using CantStop: validate_move
         using Test
 
         game = Game()
@@ -376,12 +400,12 @@ end
         player_id = :player
         message = ErrorException("rows $rows are not valid")
 
-        @test_throws message is_valid_move(game, outcome, c_idx, rows, player_id)
+        @test_throws message validate_move(game, outcome, c_idx, rows, player_id)
     end
 
     @safetestset "valid columns" begin 
         using CantStop
-        using CantStop: is_valid_move
+        using CantStop: validate_move
         using Test
 
         game = Game()
@@ -391,7 +415,7 @@ end
         rows = [2,1]
         player_id = :player
 
-        @test is_valid_move(game, outcome, c_idx, rows, player_id)
+        @test validate_move(game, outcome, c_idx, rows, player_id)
     end
 end
 
@@ -498,7 +522,7 @@ end
 @safetestset "is_over" begin
     @safetestset "1" begin 
         using CantStop
-        using CantStop: is_over
+        using CantStop: is_playing
         using Test
 
         game = Game()
@@ -508,12 +532,12 @@ end
         push!(board[3][end], :player1)
         push!(board[4][end], :player1)
 
-        @test is_over(game)
+        @test !is_playing(game)
     end
 
     @safetestset "2" begin 
         using CantStop
-        using CantStop: is_over
+        using CantStop: is_playing
         using Test
 
         game = Game()
@@ -523,12 +547,12 @@ end
         push!(board[3][end-1], :player1)
         push!(board[4][end], :player1)
 
-        @test !is_over(game)
+        @test is_playing(game)
     end
 
     @safetestset "3" begin 
         using CantStop
-        using CantStop: is_over
+        using CantStop: is_playing
         using Test
 
         game = Game()
@@ -538,7 +562,7 @@ end
         push!(board[3][end], :player1)
         push!(board[4][end], :player3)
 
-        @test !is_over(game)
+        @test is_playing(game)
     end
 end
 
@@ -574,3 +598,26 @@ end
     @test length(game.pieces[player_id]) == 11
     @test length(game.piece_reserve) == 1
 end
+
+# @safetestset "add_runners!" begin 
+#     using CantStop
+#     using CantStop: validate_runner
+#     using Test
+
+#     game = Game()
+#     push!(game.board[3][1], :player)
+#     outcome = [1,2,3,4]
+#     c_idx = [3,7]
+#     rows = [2,1]
+#     player_id = :player
+#     game.pieces[player_id] = fill(player_id, 12)
+
+#     @test validate_runner(game, outcome, c_idx, rows, player_id)
+#     add_runners!(game, c_idx, r_idx)
+
+#     outcome = [1,1,2,2]
+#     c_idx = [2,4]
+#     rows = [1,1]
+#     message = Message("Too many runners. You may only have 3 runners.")
+#     validate_runner(game, outcome, c_idx, rows, player_id)
+# end

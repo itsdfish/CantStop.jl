@@ -13,7 +13,7 @@ function simulate(game::AbstractGame, players)
     shuffle!(players)
     n = length(players)
     idx = 1
-    while !is_over(game)
+    while is_playing(game)
         play_round!(game, players[idx])
         idx = next(idx, n)
     end
@@ -51,8 +51,8 @@ function runner_selection_phase!(game::G, player::AbstractPlayer) where {G <: Ab
     id = player.id
     for i ∈ 1:2
         outcome = roll(game.dice)
-        c_idx,r_idx = select_runners(G, player, get_board(game), outcome, i)
-        is_valid_runner(game, outcome, c_idx, r_idx, id)
+        c_idx,r_idx = select_runners(G, player, get_board(game), outcome)
+        validate_runner(game, outcome, c_idx, r_idx, id)
         cache_positions!(game, c_idx, r_idx)
         add_runners!(game, c_idx, r_idx)
         add_pieces_to_reserve!(game, id, c_idx, r_idx)
@@ -78,7 +78,7 @@ function decision_phase!(game::G, player::AbstractPlayer) where {G<:AbstractGame
         outcome = roll(game.dice)
         is_bust(game, outcome) ? (handle_bust!(game, player); break) : nothing
         c_idx, r_idx = select_positions(G, player, get_board(game), outcome)
-        is_valid_move(game, outcome, c_idx, r_idx)
+        validate_move(game, outcome, c_idx, r_idx)
         move!(game, c_idx, r_idx)
     end
     return nothing
@@ -94,21 +94,14 @@ Move runner to location determined by column and row index
 # Arguments
 
 - `game::AbstractGame`: an abstract game object 
-- `c_idx`: column index 
-- `r_idx`: row index
+- `c_idx`: column index of position 
+- `r_idx`: row index of position 
 """
 function move!(game::AbstractGame, c_idx, r_idx)
     column = game.board[c_idx]
     filter!(x -> x ≠ :_runner, column[r_idx-1])
     push!(column[r_idx], :_runner)
     return nothing 
-end
-
-function get_location(column, player_id)
-    for c ∈ 1:length(column) 
-        player_id ∈ column[c] ? (return c) : nothing 
-    end
-    return 0 
 end
 
 """
@@ -130,6 +123,20 @@ function is_combination(outcome, c_idx; fun=all)
     return fun(x -> x ∈ combs, c_idx)
 end
 
+"""
+    is_bust(game::AbstractGame, outcome; fun=any)
+
+Checks whether a dice roll is a bust i.e., does not allow a valid move. 
+
+# Arguments
+
+- `game::AbstractGame`: an abstract game object for Can't Stop
+- `outcome`: a vector of dice outcomes 
+
+# Keywords
+
+- `fun=any`: a function for testing the combinations 
+"""
 function is_bust(game::AbstractGame, outcome; fun=any)
     c_idx = get_runner_locations(game.board)
     return is_bust(outcome, c_idx; fun)
@@ -137,7 +144,21 @@ end
 
 is_bust(outcome, c_idx; fun=any) = !is_combination(outcome, c_idx; fun)
 
-function is_valid_runner(game, outcome, c_idx, r_idx, player_id)
+"""
+    validate_runner(game::AbstractGame, outcome, c_idx, r_idx, player_id)
+
+Throws an error if the proposed position of a runner is invalid .
+
+# Arguments
+
+- `game::AbstractGame`: an abstract game object for Can't Stop
+- `outcome`: a vector of dice outcomes 
+- `c_idx`: column indices of active positions
+- `r_idx`: row indices of active positions
+- `player_id`: id of player
+"""
+function validate_runner(game::AbstractGame, outcome, c_idx, r_idx, player_id)
+    (;board) = game
     if isempty(c_idx)
         error("columns cannot be empty")
     end 
@@ -150,7 +171,7 @@ function is_valid_runner(game, outcome, c_idx, r_idx, player_id)
     if length(r_idx) > 2
         error("length of rows cannot exceed 2")
     end
-    if !is_in_range(game, c_idx)
+    if !is_in_range(c_idx)
         error("$c_idx not in range")
     end
     if !sufficient_pieces(game, length(c_idx), player_id)
@@ -159,11 +180,14 @@ function is_valid_runner(game, outcome, c_idx, r_idx, player_id)
     if !is_combination(outcome, c_idx)
         error("$c_idx is not a valid pair for $outcome")
     end
-    if has_been_won(game, c_idx)
+    if has_been_won(board, c_idx)
         error("$c_idx has been won")
     end
-    if !rows_are_valid(game, c_idx, r_idx, player_id)
+    if !rows_are_valid(board, c_idx, r_idx, player_id)
         error("rows $r_idx are not valid")
+    end
+    if too_many_runners(game, c_idx, r_idx)
+        error("Too many runners. You may only have 3 runners.")
     end
     return true
 end
@@ -172,34 +196,35 @@ function sufficient_pieces(game::AbstractGame, n, player_id)
     return length(game.pieces[player_id]) ≥ n
 end
 
-function is_valid_move(game, outcome, c_idx, r_idx, player_id)
+function validate_move(game, outcome, c_idx, r_idx, player_id)
+    (;board) = game
     if length(r_idx) ≠ 2 || length(c_idx) ≠ 2
         error("length of row and column indices must be 2")
     end
-    if !is_in_range(game, c_idx)
+    if !is_in_range(c_idx)
         error("$c_idx not in range")
     end
     if !is_combination(outcome, c_idx)
         error("$c_idx is not a valid pair for $outcome")
     end
-    if has_been_won(game, c_idx)
+    if has_been_won(board, c_idx)
         error("$c_idx has been won")
     end
-    if !rows_are_valid(game, c_idx, r_idx, player_id)
+    if !rows_are_valid(board, c_idx, r_idx, player_id)
         error("rows $r_idx are not valid")
     end
     return true
 end
 
-function has_been_won(game, c_idx)
+function has_been_won(board, c_idx)
     for c ∈ c_idx 
-        column = game.board[c]
+        column = board[c]
         isempty(column[end]) ? (continue) : (return true)
     end
     return false
 end
 
-function is_in_range(game, c_idx)
+function is_in_range(c_idx)
     valid_cols = 2:12
     for c ∈ c_idx 
         c ∈ valid_cols ? (continue) : (return false)
@@ -207,18 +232,27 @@ function is_in_range(game, c_idx)
     return true 
 end
 
-function rows_are_valid(game, c_idx, rows, player_id)
+function rows_are_valid(board, c_idx, r_idx, player_id)
     n = length(c_idx)
     for i ∈ 1:n 
-        if rows[i] == 1
+        if r_idx[i] == 1
             break 
-        elseif rows[i] > length(game.board[c_idx[i]])
+        elseif r_idx[i] > length(board[c_idx[i]])
             return false 
-        elseif player_id ∉ game.board[c_idx[i]][rows[i]-1] 
+        elseif player_id ∉ board[c_idx[i]][r_idx[i]-1] 
             return false
         end
     end
     return true 
+end
+
+function too_many_runners(game, c_idx, r_idx)
+    n_runners = game.runner_count
+    n_new_runners = 0
+    for i ∈ 1:length(c_idx)
+        n_new_runners += :_runner ∉ game.board[c_idx[i]][r_idx[i]]
+    end
+    return n_runners + n_new_runners > 3 ? true : false
 end
 
 function set_pieces!(game::AbstractGame, player_id)
@@ -232,7 +266,7 @@ end
 
 # Arguments
 
-- `game::AbstractGame`: an abstract game object 
+- `game::AbstractGame`: an abstract game object for Can't Stop
 - `player_id::Symbol`: id of player
 """
 function remove_pieces!(game::AbstractGame, player_id)
@@ -264,13 +298,13 @@ function replace_runners!(game::AbstractGame, player_id)
     return nothing
 end
 
-function is_over(game)
+function is_playing(game)
     ids = Symbol[]
     for c ∈ values(game.board)
         push!(ids, unique(c[end])...)
     end
     counts = map(x -> count(y -> x == y, ids), unique(ids))
-    return any(x -> x ≥ 3, counts)
+    return all(x -> x < 3, counts)
 end
 
 """
@@ -310,6 +344,7 @@ function cleanup!(game::G, player::AbstractPlayer) where {G<:AbstractGame}
     empty!(game.r_idx)
     empty!(game.c_idx)
     empty!(game.piece_reserve)
+    game.runner_count = 0
     return nothing
 end
 
@@ -331,6 +366,7 @@ function add_runners!(game::AbstractGame, c_idx, r_idx)
     for i ∈ 1:length(r_idx)
         push!(game.board[c_idx[i]][r_idx[i]], :_runner)
     end
+    game.runner_count += length(r_idx)
     return nothing
 end
 
@@ -354,7 +390,7 @@ function initialize_pieces!(game::AbstractGame, players)
 end
 
 function initialize_pieces!(game::AbstractGame, p::AbstractPlayer)
-    game.pieces[p.id] = fill(p.id, 12)
+    game.pieces[p.id] = fill(p.id, 11)
     return nothing
 end
 

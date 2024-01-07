@@ -1,3 +1,20 @@
+"""
+    Dice
+    
+An object for rolling dice. 
+
+# Fields 
+
+- `n::Int`: number of rolls 
+- `sides::Int`: number of sides per die
+
+# Constructors 
+
+```julia
+Dice(4, 6)
+Dice(;n=4, sides=6)
+```
+"""
 struct Dice 
     n::Int 
     sides::Int 
@@ -16,6 +33,7 @@ An abstract type for a player. Subtypes of `AbstractPlayer` must have the fields
 
 - `id::Symbol`: player id
 - `pieces::Vector{Symbol}`: a vector of 12 pieces where each piece has the value `id`. 
+- `piece_reserve::Vector{}`: an optional vector for keeping track of pieces which will replace runners unless a bust occurs
 
 In addition, for a subtype `MyPlayer <: AbstractPlayer`, the API requires the following constructor to ensure 
 the correct number of pieces are provided. 
@@ -56,6 +74,12 @@ abstract type AbstractGame end
 - `c_idx::Vector{Int}`: column indices of starting position of active piece 
 - `r_idx::Vector{Int}`: row indices of starting position of active pieace
 - `pieces::Dict{Symbol,Vector{Symbol}}`: inactive pieces for each player: `player_id -> pieces`
+
+# Constructor
+
+```julia
+Game(;dice=Dice(), board=make_board())
+```
 """
 mutable struct Game{T} <: AbstractGame
     dice::Dice 
@@ -64,10 +88,11 @@ mutable struct Game{T} <: AbstractGame
     r_idx::Vector{Int}
     pieces::Dict{Symbol,Vector{Symbol}}
     piece_reserve::Vector{Symbol}
+    runner_count::Int
 end
 
 function Game(;dice=Dice(), board=make_board())
-    return Game(dice, board, Int[], Int[], Dict{Symbol,Vector{Symbol}}(), Symbol[])
+    return Game(dice, board, Int[], Int[], Dict{Symbol,Vector{Symbol}}(), Symbol[], 0)
 end
 
 function make_board()
