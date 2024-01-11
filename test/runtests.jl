@@ -63,39 +63,6 @@ end
         @test_throws  message validate_runner(game, outcome, c_idx, rows, player_id)
     end
 
-    @safetestset "column error" begin 
-        using CantStop
-        using CantStop: validate_runner
-        using Test
-
-        game = Game()
-        outcome = [1,2,3,4]
-        c_idx = []
-        rows = [1,2]
-        player_id = :player 
-        game.pieces[player_id] = fill(player_id, 12)
-
-        message = ErrorException("columns cannot be empty")
-
-        @test_throws message validate_runner(game, outcome, c_idx, rows, player_id)
-    end
-
-    @safetestset "row empty error" begin 
-        using CantStop
-        using CantStop: validate_runner
-        using Test
-
-        game = Game()
-        outcome = [1,2,3,4]
-        c_idx = [3,7]
-        rows = []
-        player_id = :player 
-        game.pieces[player_id] = fill(player_id, 12)
-        message = ErrorException("rows cannot be empty")
-
-        @test_throws message validate_runner(game, outcome, c_idx, rows, player_id)
-    end
-
     @safetestset "not in range" begin 
         using CantStop
         using CantStop: validate_runner
@@ -258,8 +225,8 @@ end
         game = Game()
         push!(game.board[3][1], :player)
         outcome = [1,2,3,4]
-        c_idx = [3,7]
-        r_idx = [2,1]
+        c_idx = [5,7]
+        r_idx = [1,1]
         player_id = :player
         game.pieces[player_id] = fill(player_id, 12)
     
@@ -276,35 +243,21 @@ end
 
 @safetestset "validate_move" begin
 
-    @safetestset "incorrect column length" begin 
+    @safetestset "unequal length" begin 
         using CantStop
         using CantStop: validate_move
         using Test
 
         game = Game()
+        
         push!(game.board[2][end], :player)
         outcome = [1,2,3,4]
         c_idx = [2]
         rows = [1,2]
         player_id = :player 
+        game.pieces[player_id] = fill(player_id, 12)
 
-        message = ErrorException("length of row and column indices must be 2")
-        @test_throws  message validate_move(game, outcome, c_idx, rows, player_id)
-    end
-
-    @safetestset "incorrect row length" begin 
-        using CantStop
-        using CantStop: validate_move
-        using Test
-
-        game = Game()
-        push!(game.board[2][end], :player)
-        outcome = [1,2,3,4]
-        c_idx = [2,3]
-        rows = [1,2,4]
-        player_id = :player 
-
-        message = ErrorException("length of row and column indices must be 2")
+        message = ErrorException("columns and rows do not have the same length")
         @test_throws  message validate_move(game, outcome, c_idx, rows, player_id)
     end
 
@@ -566,9 +519,9 @@ end
     end
 end
 
-@safetestset "return_to_reserve!" begin 
+@safetestset "return_pieces!" begin 
     using CantStop
-    using CantStop: return_to_reserve!
+    using CantStop: return_pieces!
     using Test
 
     game = Game()
@@ -576,7 +529,7 @@ end
     game.pieces[player_id] = fill(player_id, 9)
     push!(game.piece_reserve, fill(player_id, 3)...)
 
-    return_to_reserve!(game, player_id)
+    return_pieces!(game, player_id)
 
     @test length(game.pieces[player_id]) == 12
     @test isempty(game.piece_reserve)

@@ -32,8 +32,8 @@ An abstract type for a player. Subtypes of `AbstractPlayer` must have the fields
 # Fields
 
 - `id::Symbol`: player id
-- `pieces::Vector{Symbol}`: a vector of 12 pieces where each piece has the value `id`. 
-- `piece_reserve::Vector{}`: an optional vector for keeping track of pieces which will replace runners unless a bust occurs
+- `pieces::Vector{Symbol}`: a vector of 11 pieces where each piece has the value `id`. 
+- `piece_reserve::Vector{Symbol}`: an optional vector for keeping track of pieces which will replace runners unless a bust occurs
 
 In addition, for a subtype `MyPlayer <: AbstractPlayer`, the API requires the following constructor to ensure 
 the correct number of pieces are provided. 
@@ -41,7 +41,7 @@ the correct number of pieces are provided.
 # Constructor
 
 ```julia 
-MyPlayer(;id, pieces=fill(id, 12)) = MyPlayer(id, pieces)
+MyPlayer(;id, pieces=fill(id, 11)) = MyPlayer(id, pieces)
 ```
 """
 abstract type AbstractPlayer end 
@@ -56,7 +56,7 @@ The following fields are required in order to work with default methods:
 # Fields 
 
 - `dice::Dice`: an object resepresenting four dice 
-- `board::Dict{Int,T}`: a dictionary representing columns 2-12. Each column is a vector of symbol vectors which contain the player ids 
+- `board::Dict{Int,T}`: a dictionary representing columns 2-11. Each column is a vector of symbol vectors which contain the player ids 
 - `c_idx::Vector{Int}`: column indices of starting position of active piece 
 - `r_idx::Vector{Int}`: row indices of starting position of active pieace
 - `pieces::Dict{Symbol,Vector{Symbol}}`: inactive pieces for each player: `player_id -> pieces`
@@ -70,7 +70,7 @@ abstract type AbstractGame end
 # Fields 
 
 - `dice::Dice`: an object resepresenting four dice 
-- `board::Dict{Int,T}`: a dictionary representing columns 2-12. Each row in a column is a vector of symbols which contain the player ids 
+- `board::Dict{Int,T}`: a dictionary representing columns 2-11. Each row in a column is a vector of symbols which contain the player ids 
 - `c_idx::Vector{Int}`: column indices of starting position of active piece 
 - `r_idx::Vector{Int}`: row indices of starting position of active pieace
 - `pieces::Dict{Symbol,Vector{Symbol}}`: inactive pieces for each player: `player_id -> pieces`
@@ -97,5 +97,5 @@ end
 
 function make_board()
     spaces = [3,5,7,9,11,13,11,9,7,5,3]
-    return Dict(i => [Symbol[] for _ ∈ 1:spaces[i-1]] for i ∈ 2:12)
+    return Dict(i => [Symbol[] for _ ∈ 1:spaces[i-1]] for i ∈ 2:11)
 end

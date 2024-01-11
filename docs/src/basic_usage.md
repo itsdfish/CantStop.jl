@@ -9,10 +9,13 @@ import CantStop: take_chance
 
 # Introduction 
 
+In this tutorial, we provide a basic example to illustrate how to use the API for Cantstop.jl.
 
 # Example 
 
 ## Dependencies 
+
+The first step is to load the dependencies. In this simple example, the only dependency we need is `CantStop`, which is loaded via the `using` keyword. In addition, we must import a total of five methods using the keyword `import`. By importing the methods, we can define a version of each method which works with our player type. 
 
 ```@example example
 using CantStop
@@ -25,12 +28,15 @@ import CantStop: take_chance
 
 ## Make Player Type
 
+The API for `CantStop` requires you to define your own player type, which is a subtype of `AbstractPlayer`. The example below contains three required fields: `id`, which is a unique identifier for an instance of your player type, `pieces`, which is a vector containing 11 elements of `id`, and `piece_reserve`, which contain
 ```@example example
 struct Player <: AbstractPlayer
     id::Symbol
     pieces::Vector{Symbol}
+    piece_reserve::Vector{Symbol}
 end
-Player(;id) = Player(id, fill(id, 12))
+
+Player(;id) = Player(id, fill(id, 11), Symbol[])
 ```
 
 ## Required Methods 

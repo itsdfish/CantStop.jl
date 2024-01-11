@@ -22,7 +22,10 @@ end
 """
     play_round!(game::AbstractGame, player::AbstractPlayer)
 
-Play one round with a specified player.
+Play one round with a specified player. A round has two phases:
+
+- a runner selection phase 
+- a decision phase
 
 # Arguments
 
@@ -159,12 +162,6 @@ Throws an error if the proposed position of a runner is invalid .
 """
 function validate_runner(game::AbstractGame, outcome, c_idx, r_idx, player_id)
     (;board) = game
-    if isempty(c_idx)
-        error("columns cannot be empty")
-    end 
-    if isempty(r_idx)
-        error("rows cannot be empty")
-    end 
     if length(r_idx) ≠ length(c_idx)
         error("columns and rows do not have the same length")
     end
@@ -198,8 +195,11 @@ end
 
 function validate_move(game, outcome, c_idx, r_idx, player_id)
     (;board) = game
-    if length(r_idx) ≠ 2 || length(c_idx) ≠ 2
-        error("length of row and column indices must be 2")
+    if length(r_idx) ≠ length(c_idx)
+        error("columns and rows do not have the same length")
+    end
+    if length(r_idx) > 2
+        error("length of rows cannot exceed 2")
     end
     if !is_in_range(c_idx)
         error("$c_idx not in range")
@@ -247,12 +247,12 @@ function rows_are_valid(board, c_idx, r_idx, player_id)
 end
 
 function too_many_runners(game, c_idx, r_idx)
-    n_runners = game.runner_count
     n_new_runners = 0
     for i ∈ 1:length(c_idx)
         n_new_runners += :_runner ∉ game.board[c_idx[i]][r_idx[i]]
     end
-    return n_runners + n_new_runners > 3 ? true : false
+    println("n_new_runners $(n_new_runners)")
+    return game.runner_count + n_new_runners > 3 ? true : false
 end
 
 function set_pieces!(game::AbstractGame, player_id)
@@ -325,7 +325,7 @@ function clear_runners!(game)
     return nothing
 end
 
-function return_to_reserve!(game, player_id)
+function return_pieces!(game, player_id)
     for p ∈ 1:length(game.piece_reserve)
         piece = pop!(game.piece_reserve)
         push!(game.pieces[player_id], piece) 
@@ -336,7 +336,7 @@ end
 function handle_bust!(game::G, player::AbstractPlayer) where {G<:AbstractGame}
     postbust_cleanup!(G, player)
     clear_runners!(game)
-    return_to_reserve!(game, player.id)
+    return_pieces!(game, player.id)
     return nothing
 end
 
@@ -357,16 +357,24 @@ end
 next(idx, n) = idx == n ? 1 : idx += 1
 
 function cache_positions!(game::AbstractGame, c_idx, r_idx)
-    push!(game.c_idx, c_idx...)
-    push!(game.r_idx, r_idx...)
+    for i ∈ 1:length(c_idx)
+        if r_idx[i] == 1
+            push!(game.c_idx, c_idx[i])
+            push!(game.r_idx, r_idx[i])
+        end
+    end
     return nothing 
 end
 
 function add_runners!(game::AbstractGame, c_idx, r_idx)
     for i ∈ 1:length(r_idx)
-        push!(game.board[c_idx[i]][r_idx[i]], :_runner)
+        if r_idx[i] == 1
+            game.runner_count += 1
+            push!(game.board[c_idx[i]][r_idx[i]], :_runner)
+        else 
+            move!(game, c_idx[i], r_idx[i])
+        end
     end
-    game.runner_count += length(r_idx)
     return nothing
 end
 
@@ -414,4 +422,3 @@ Returns a copy of the board.
 - `game::AbstractGame`: an abstract game object 
 """
 get_board(game::AbstractGame) = deepcopy(game.board)
-

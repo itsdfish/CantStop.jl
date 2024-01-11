@@ -182,7 +182,10 @@ Evaluates whether a proposed move is valid.
 - `player_id`: id of player
 """
 function is_valid_move(board, outcome, c_idx, r_idx, player_id)
-    if length(r_idx) ≠ 2 || length(c_idx) ≠ 2
+    if length(r_idx) ≠ length(c_idx)
+        return false
+    end
+    if length(r_idx) > 2
         return false
     end
     if !is_in_range(c_idx)
@@ -216,12 +219,6 @@ Evaluates whether a proposed runner is valid.
 """
 function is_valid_runner(board, outcome, c_idx, r_idx, player_id)
     (;board) = game
-    if isempty(c_idx)
-        return false
-    end 
-    if isempty(r_idx)
-        return false
-    end 
     if length(r_idx) ≠ length(c_idx)
         return false
     end
