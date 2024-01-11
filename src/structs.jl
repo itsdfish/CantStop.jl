@@ -24,6 +24,18 @@ function Dice(;n=4, sides=6)
     return Dice(n, sides)
 end
 
+abstract type AbstractPiece end
+
+mutable struct Piece <: AbstractPiece 
+    id::Symbol 
+    row::Int 
+    is_runner::Bool
+    max_row::Int 
+    start_row::Int 
+end
+
+Piece(;id, row=0, is_runner=false, max_row, start_row=0) = Piece(id, row, is_runner, max_row, start_row)
+
 """
     AbstractPlayer
 
@@ -70,9 +82,6 @@ abstract type AbstractGame end
 # Fields 
 
 - `dice::Dice`: an object resepresenting four dice 
-- `board::Dict{Int,T}`: a dictionary representing columns 2-11. Each row in a column is a vector of symbols which contain the player ids 
-- `c_idx::Vector{Int}`: column indices of starting position of active piece 
-- `r_idx::Vector{Int}`: row indices of starting position of active pieace
 - `pieces::Dict{Symbol,Vector{Symbol}}`: inactive pieces for each player: `player_id -> pieces`
 
 # Constructor
@@ -81,21 +90,12 @@ abstract type AbstractGame end
 Game(;dice=Dice(), board=make_board())
 ```
 """
-mutable struct Game{T} <: AbstractGame
+mutable struct Game{P<:AbstractPiece} <: AbstractGame
     dice::Dice 
-    board::Dict{Int,T}
-    c_idx::Vector{Int}
-    r_idx::Vector{Int}
-    pieces::Dict{Symbol,Vector{Symbol}}
-    piece_reserve::Vector{Symbol}
-    runner_count::Int
+    pieces::Dict{Symbol, Dict{Int64, P}}
 end
 
-function Game(;dice=Dice(), board=make_board())
-    return Game(dice, board, Int[], Int[], Dict{Symbol,Vector{Symbol}}(), Symbol[], 0)
-end
-
-function make_board()
-    spaces = [3,5,7,9,11,13,11,9,7,5,3]
-    return Dict(i => [Symbol[] for _ ∈ 1:spaces[i-1]] for i ∈ 2:11)
+function Game(;dice=Dice(), piece_type=Piece)
+    pieces = Dict{Symbol, Dict{Int64, piece_type}}()
+    return Game(dice, pieces)
 end

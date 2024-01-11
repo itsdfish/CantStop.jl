@@ -12,7 +12,6 @@ AbstractPlayer
 ### Methods
 
 ```@docs 
-select_runners
 take_chance
 select_positions
 postbust_cleanup!
@@ -38,10 +37,5 @@ Game
 The following methods might be helpful for defining the required methods above.
 
 ```@docs
-get_active_locations
-get_runner_locations
-is_valid_runner
-list_sums
-reserve_piece!
 simulate
 ```
