@@ -69,7 +69,9 @@ The following fields are required in order to work with default methods:
 
 - `dice::Dice`: an object resepresenting four dice 
 - `pieces::Dict{Symbol,Vector{Symbol}}`: inactive pieces for each player: `player_id -> pieces`
-- `columns_won::Dict{Int,Symbol}`: indicates which player won a given column. A value of `:_` indicates no 
+- `columns_won::Vector{Int}`: a vector of indices for columns won
+- `max_rows::Dict{Int,Int}`: maximum number of rows for each column
+- `players_won::Dict{Int,Symbol}`: indicates which player won a given column. A value of `:_` indicates no 
     player has won the column
 """
 abstract type AbstractGame end
@@ -84,6 +86,7 @@ The default game object for CantStop.
 - `dice::Dice`: an object resepresenting four dice 
 - `pieces::Dict{Symbol,Vector{Symbol}}`: inactive pieces for each player: `player_id -> pieces`
 - `columns_won::Vector{Int}`: a vector of indices for columns won
+- `max_rows::Dict{Int,Int}`: maximum number of rows for each column
 - `players_won::Dict{Int,Symbol}`: indicates which player won a given column. A value of `:_` indicates no 
     player has won the column
 
@@ -98,11 +101,14 @@ mutable struct Game{P<:AbstractPiece} <: AbstractGame
     pieces::Dict{Symbol, Dict{Int64, P}}
     columns_won::Vector{Int}
     players_won::Dict{Int,Symbol}
+    max_rows::Dict{Int,Int}
     runner_cols::Vector{Int}
 end
 
 function Game(;dice=Dice(), piece_type=Piece)
     pieces = Dict{Symbol, Dict{Int64, piece_type}}()
     players_won = Dict(i => :_ for i ∈ 2:12)
-    return Game(dice, pieces, Int[], players_won, Int[])
+    _max_rows = [3,5,7,9,11,13,11,9,7,5,3]
+    max_rows = Dict(i => _max_rows[i-1] for i ∈ 2:12)
+    return Game(dice, pieces, Int[], players_won, max_rows, Int[])
 end

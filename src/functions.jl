@@ -5,8 +5,8 @@ Simulate CantStop until a player has won.
 
 # Arguments
 
-- `game::AbstractGame`: an abstract game object 
-- `players`: a vector of players where elements are a subtype of a abstract player
+- `game::AbstractGame`: an abstract game object for Can't Stop
+- `player::AbstractPlayer`: an subtype of a abstract player
 """
 function simulate(game::AbstractGame, players)
     initialize_pieces!(game, players)
@@ -22,14 +22,14 @@ end
 """
     play_round!(game::AbstractGame, player::AbstractPlayer)
 
-Play one round with a specified player. A round has two phases:
+Play one round with a specified player. During each iteration of a round, the player makes two decision_phase
 
-- a runner selection phase 
-- a decision phase
+1. decide whether to roll the dice
+2. decide which dice to pair and sum to select columns
 
 # Arguments
 
-- `game::AbstractGame`: an abstract game object 
+- `game::AbstractGame`: an abstract game object for Can't Stop
 - `player::AbstractPlayer`: an subtype of a abstract player
 """
 function play_round!(game::AbstractGame, player::AbstractPlayer)
@@ -46,7 +46,7 @@ moving the runners. The two methods named `decide!` are called during this phase
 
 # Arguments
 
-- `game::AbstractGame`: an abstract game object 
+- `game::AbstractGame`: an abstract game object for Can't Stop
 - `player::AbstractPlayer`: an subtype of a abstract player
 """
 function decision_phase!(game::AbstractGame, player::AbstractPlayer)
@@ -54,12 +54,12 @@ function decision_phase!(game::AbstractGame, player::AbstractPlayer)
         # roll the dice 
         outcome = roll(game.dice)
         # list_options
-        options = list_options(game, player, outcome)
-        is_bust(options) ? (handle_bust!(game, player); break) : nothing
+        options = list_options(game, outcome)
+        is_bust(game, options) ? (handle_bust!(game, player); break) : nothing
         choice = select_positions(deepcopy(game), player, options)
         validate_choice(options, choice) ? nothing : break 
-        set_status!(game, player.id, c_idx, r_idx)
-        move!(game, player.id, c_idx, r_idx)
+        set_status!(game, player.id, choice)
+        move!(game, player.id, choice)
         risk_it = take_chance(deepcopy(game), player)
         risk_it ? nothing : (handle_stop!(game, player); break) 
     end
@@ -69,29 +69,41 @@ end
 roll(dice) = rand(1:dice.sides, dice.n)
 
 """
-    move!(game::AbstractGame, c_idx, r_idx)
+    move!(game::AbstractGame, id, r_idx)
 
 Move runner to location determined by column and row index
 
 # Arguments
 
-- `game::AbstractGame`: an abstract game object 
+- `game::AbstractGame`: an abstract game object
+- `id`: the id of the player 
 - `c_idx`: column index of position 
-- `r_idx`: row index of position 
 """
-function move!(game::AbstractGame, id, c_idx, r_idx)
-    for i ∈ 1:length(c_idx)
-        game.pieces[id][c_idx[i]].row += 1
+function move!(game::AbstractGame, id, c_idx)
+    for c ∈ c_idx
+        game.pieces[id][c].row += 1
     end
     return nothing 
 end
 
-function set_status!(game::AbstractGame, id, c_idx, r_idx)
+"""
+    set_status!(game::AbstractGame, id, c_idx)
+
+Move runner to location determined by column and row index
+
+# Arguments
+
+- `game::AbstractGame`: an abstract game object
+- `id`: the id of the player 
+- `c_idx`: column index of position 
+"""
+function set_status!(game::AbstractGame, id, c_idx)
     for i ∈ 1:length(c_idx)
         piece = game.pieces[id][c_idx[i]]
         if !piece.is_runner 
             piece.is_runner = true 
-            piece.start_row = piece.row 
+            piece.start_row = piece.row
+            push!(game.runner_cols, c_idx[i]) 
         end
     end
     return nothing 
@@ -100,36 +112,7 @@ end
 validate_choice(options, choice) = choice ∈ options
 
 """
-    is_combination(outcome, c_idx)
-
-Tests whether columns are a possible some of dice outcome.
-
-# Arguments
-
-- `outcome`: a vector of dice outcomes 
-- `c_idx`: a vector of sums based on pairs of dice outcomes 
-
-# Keywords
-
-- `fun=all`: a function for testing the combinations 
-"""
-function is_combination(outcome, c_idx; fun=all)
-    combs = list_sums(outcome) 
-    n = length(c_idx)
-    checks = fill(false, n)
-    for c ∈ 1:n
-        println("c_idx[c] $(c_idx[c]) in $combs")
-        if c_idx[c] ∈ combs 
-            idx = findfirst(x -> x == c_idx[c], combs)
-            deleteat!(combs, idx)
-            checks[c] = true
-        end
-    end
-    return fun(checks)
-end
-
-"""
-    is_bust(options)
+    is_bust(game::AbstractGame, options)
 
 Checks whether a dice roll is a bust i.e., does not allow a valid move. 
 
@@ -140,29 +123,63 @@ Checks whether a dice roll is a bust i.e., does not allow a valid move.
 """
 is_bust(game::AbstractGame, options) = isempty(options)
 
+"""
+    is_playing(game::AbstractGame)
+
+# Arguments
+
+- `game::AbstractGame`: an abstract game object for Can't Stop
+"""
 function is_playing(game::AbstractGame)
     counts = [count(y -> id == y, values(game.players_won)) for id ∈ keys(game.pieces)]
     return all(x -> x < 3, counts)
 end
 
+function cleanup(game::AbstractGame, player)
+    set_runners_false!(game::AbstractGame, player)
+    empty!(game.runner_cols)
+end
+
+"""
+    set_runners_false!(game::AbstractGame, player)
+
+# Arguments
+
+- `game::AbstractGame`: an abstract game object for Can't Stop
+- `player::AbstractPlayer`: an subtype of a abstract player
+"""
 function handle_bust!(game::AbstractGame, player::AbstractPlayer)
     postbust_cleanup!(deepcopy(game), player)
     return_to_start_position!(game, player)
-    set_runners_false!(game, player)
     return nothing
 end
 
+"""
+    set_runners_false!(game::AbstractGame, player)
+
+# Arguments
+
+- `game::AbstractGame`: an abstract game object for Can't Stop
+- `player::AbstractPlayer`: an subtype of a abstract player
+"""
 function handle_stop!(game::AbstractGame, player::AbstractPlayer)
     poststop_cleanup!(deepcopy(game), player)
-    set_runners_false!(game, player)
+    check_winners!(game, player)
     return nothing 
 end
 
 next(idx, n) = idx == n ? 1 : idx += 1
 
+"""
+    set_runners_false!(game::AbstractGame, player)
+
+# Arguments
+
+- `game::AbstractGame`: an abstract game object for Can't Stop
+- `player::AbstractPlayer`: an subtype of a abstract player
+"""
 function initialize_pieces!(game::AbstractGame, p::AbstractPlayer)
-    max_rows = [3,5,7,9,11,13,11,9,7,5,3]
-    return Dict(i => Piece(;id=p.id, max_row=max_rows[i-1]) for i ∈ 2:11)
+    return Dict(i => Piece(;id=p.id, max_row=game.max_rows[i]) for i ∈ 2:11)
 end
 
 function initialize_pieces!(game::AbstractGame, players)
@@ -170,19 +187,46 @@ function initialize_pieces!(game::AbstractGame, players)
     return nothing
 end
 
-function set_runners_false!(game::AbstractGame, player)
-    for p ∈ game.pieces[player.id]
+"""
+    set_runners_false!(game::AbstractGame, player)
+
+# Arguments
+
+- `game::AbstractGame`: an abstract game object for Can't Stop
+- `player::AbstractPlayer`: an subtype of a abstract player
+"""
+function set_runners_false!(game::AbstractGame, player::AbstractPlayer)
+    for p ∈ values(game.pieces[player.id])
+        p.is_runner = false 
+    end
+    return nothing
+end
+
+"""
+    return_to_start_position!(game::AbstractGame, player::AbstractPlayer)
+
+# Arguments
+
+- `game::AbstractGame`: an abstract game object for Can't Stop
+- `player::AbstractPlayer`: an subtype of a abstract player
+"""
+function return_to_start_position!(game::AbstractGame, player::AbstractPlayer)
+    for p ∈ values(game.pieces[player.id])
         if p.is_runner 
-            p.is_runner = false 
+            p.row = p.start_row
         end
     end
     return nothing
 end
 
-function return_to_start_position!(game, player)
-    for p ∈ game.pieces[player.id]
-        if p.is_runner 
-            p.row = p.start_row
+function check_winners!(game::AbstractGame, player::AbstractPlayer)
+    (;pieces,runner_cols,columns_won,players_won) = game
+    id = player.id
+    for c ∈ runner_cols
+        piece = pieces[id][c]
+        if piece.row ≥ piece.max_row
+           push!(columns_won, c) 
+           players_won[c] = id
         end
     end
     return nothing
@@ -208,6 +252,16 @@ function list_sums(outcome)
     return output 
 end
 
+"""
+    list_sums(outcome)
+
+Lists all unique sum of combinations of the outcome of rolling dice
+
+# Arguments
+
+- `game::AbstractGame`: an abstract game object for Can't Stop
+- `outcome`: the results of rolling the dice
+"""
 function list_options(game, outcome)
     (;runner_cols,columns_won) = game 
     all_options = list_sums(outcome)
