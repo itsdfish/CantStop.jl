@@ -55,7 +55,7 @@ function decision_phase!(game::AbstractGame, player::AbstractPlayer)
         outcome = roll(game.dice)
         # list_options
         options = list_options(game, player, outcome)
-        is_bust(game, player, options) ? (handle_bust!(game, player); break) : nothing
+        is_bust(options) ? (handle_bust!(game, player); break) : nothing
         choice = select_positions(deepcopy(game), player, options)
         validate_choice(options, choice) ? nothing : break 
         set_status!(game, player.id, c_idx, r_idx)
@@ -97,6 +97,8 @@ function set_status!(game::AbstractGame, id, c_idx, r_idx)
     return nothing 
 end
 
+validate_choice(options, choice) = choice ∈ options
+
 """
     is_combination(outcome, c_idx)
 
@@ -127,32 +129,19 @@ function is_combination(outcome, c_idx; fun=all)
 end
 
 """
-    is_bust(game::AbstractGame, outcome; fun=any)
+    is_bust(options)
 
 Checks whether a dice roll is a bust i.e., does not allow a valid move. 
 
 # Arguments
 
 - `game::AbstractGame`: an abstract game object for Can't Stop
-- `outcome`: a vector of dice outcomes 
-
-# Keywords
-
-- `fun=any`: a function for testing the combinations 
+- `options`: a vector of column indices corresponding to possible choices
 """
-function is_bust(game::AbstractGame, outcome; fun=any)
-    c_idx = get_runner_locations(game.board)
-    return is_bust(outcome, c_idx; fun)
-end
+is_bust(game::AbstractGame, options) = isempty(options)
 
-is_bust(outcome, c_idx; fun=any) = !is_combination(outcome, c_idx; fun)
-
-function is_playing(game)
-    ids = Symbol[]
-    for c ∈ values(game.board)
-        push!(ids, unique(c[end])...)
-    end
-    counts = map(x -> count(y -> x == y, ids), unique(ids))
+function is_playing(game::AbstractGame)
+    counts = [count(y -> id == y, values(game.players_won)) for id ∈ keys(game.pieces)]
     return all(x -> x < 3, counts)
 end
 
@@ -217,4 +206,31 @@ function list_sums(outcome)
         end
     end
     return output 
+end
+
+function list_options(game, outcome)
+    (;runner_cols,columns_won) = game 
+    all_options = list_sums(outcome)
+    n_runners = length(runner_cols)
+    to_keep = fill(true, length(all_options))
+    split_options = Vector{Vector{Int}}()
+    for (i,option) ∈ enumerate(all_options)
+        filter!(x -> x ∉ columns_won, option)
+        if n_runners == 3
+            filter!(x -> x ∈ runner_cols, option)
+        elseif n_runners == 0
+            continue
+        elseif n_runners < 3
+            to_keep[i] = all(x -> x == option[1], option) ||
+                 any(x -> x ∈ runner_cols, option)
+            if !to_keep[i]
+                push!(split_options, [[v] for v ∈ option]...)
+            end
+        end
+    end
+    all_options = all_options[to_keep]
+    push!(all_options, split_options...)
+    unique!(all_options)
+    filter!(x -> !isempty(x), all_options)
+    return all_options
 end

@@ -31,7 +31,7 @@ mutable struct Piece <: AbstractPiece
     row::Int 
     is_runner::Bool
     max_row::Int 
-    start_row::Int 
+    start_row::Int
 end
 
 Piece(;id, row=0, is_runner=false, max_row, start_row=0) = Piece(id, row, is_runner, max_row, start_row)
@@ -68,34 +68,41 @@ The following fields are required in order to work with default methods:
 # Fields 
 
 - `dice::Dice`: an object resepresenting four dice 
-- `board::Dict{Int,T}`: a dictionary representing columns 2-11. Each column is a vector of symbol vectors which contain the player ids 
-- `c_idx::Vector{Int}`: column indices of starting position of active piece 
-- `r_idx::Vector{Int}`: row indices of starting position of active pieace
 - `pieces::Dict{Symbol,Vector{Symbol}}`: inactive pieces for each player: `player_id -> pieces`
-- `piece_reserve::Vector{Symbol}`: holds pieces for runners started at the beginning of the column
+- `columns_won::Dict{Int,Symbol}`: indicates which player won a given column. A value of `:_` indicates no 
+    player has won the column
 """
 abstract type AbstractGame end
 
 """
-    Game{T} <: AbstractGame
+    Game{P<:AbstractPiece} <: AbstractGame
+
+The default game object for CantStop. 
 
 # Fields 
 
 - `dice::Dice`: an object resepresenting four dice 
 - `pieces::Dict{Symbol,Vector{Symbol}}`: inactive pieces for each player: `player_id -> pieces`
+- `columns_won::Vector{Int}`: a vector of indices for columns won
+- `players_won::Dict{Int,Symbol}`: indicates which player won a given column. A value of `:_` indicates no 
+    player has won the column
 
 # Constructor
 
 ```julia
-Game(;dice=Dice(), board=make_board())
+Game(;dice=Dice(), piece_type=Piece)
 ```
 """
 mutable struct Game{P<:AbstractPiece} <: AbstractGame
     dice::Dice 
     pieces::Dict{Symbol, Dict{Int64, P}}
+    columns_won::Vector{Int}
+    players_won::Dict{Int,Symbol}
+    runner_cols::Vector{Int}
 end
 
 function Game(;dice=Dice(), piece_type=Piece)
     pieces = Dict{Symbol, Dict{Int64, piece_type}}()
-    return Game(dice, pieces)
+    players_won = Dict(i => :_ for i ∈ 2:12)
+    return Game(dice, pieces, Int[], players_won, Int[])
 end
