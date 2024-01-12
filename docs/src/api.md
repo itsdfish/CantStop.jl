@@ -11,9 +11,11 @@ AbstractPlayer
 
 ### Methods
 
+The API requires one to define the following methods for each custom player type. 
+
 ```@docs 
-take_chance
-select_positions
+roll_again
+select_runners
 postbust_cleanup!
 poststop_cleanup!
 ```
@@ -37,5 +39,6 @@ Game
 The following methods might be helpful for defining the required methods above.
 
 ```@docs
-simulate
+simulate!
+get_winner
 ```

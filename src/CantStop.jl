@@ -8,12 +8,12 @@ module CantStop
     export Game 
     export Piece
 
-
+    export get_winner
     export postbust_cleanup!
     export poststop_cleanup!
-    export select_positions
-    export simulate
-    export take_chance 
+    export roll_again 
+    export select_runners
+    export simulate!
     
     include("structs.jl")
     include("functions.jl")

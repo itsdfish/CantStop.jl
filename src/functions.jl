@@ -1,5 +1,5 @@
 """
-    simulate(game::AbstractGame, players)
+    simulate!(game::AbstractGame, players)
 
 Simulate CantStop until a player has won. 
 
@@ -8,7 +8,7 @@ Simulate CantStop until a player has won.
 - `game::AbstractGame`: an abstract game object for Can't Stop
 - `player::AbstractPlayer`: an subtype of a abstract player
 """
-function simulate(game::AbstractGame, players)
+function simulate!(game::AbstractGame, players)
     initialize_pieces!(game, players)
     shuffle!(players)
     n = length(players)
@@ -25,7 +25,7 @@ end
 Play one round with a specified player. During each iteration of a round, the player makes two decision_phase
 
 1. decide whether to roll the dice
-2. decide which dice to pair and sum to select columns
+2. decide which pairs to sum to move runners
 
 # Arguments
 
@@ -56,11 +56,11 @@ function decision_phase!(game::AbstractGame, player::AbstractPlayer)
         # list_options
         options = list_options(game, outcome)
         is_bust(game, options) ? (handle_bust!(game, player); break) : nothing
-        choice = select_positions(deepcopy(game), player, options)
+        choice = select_runners(deepcopy(game), player, deepcopy(options))
         validate_choice(options, choice) ? nothing : break 
         set_status!(game, player.id, choice)
         move!(game, player.id, choice)
-        risk_it = take_chance(deepcopy(game), player)
+        risk_it = roll_again(deepcopy(game), player)
         risk_it ? nothing : (handle_stop!(game, player); break) 
     end
     return nothing
@@ -109,7 +109,18 @@ function set_status!(game::AbstractGame, id, c_idx)
     return nothing 
 end
 
-validate_choice(options, choice) = choice ∈ options
+
+"""
+    validate_choice(options::Vector{Vector{Int}}, choice::Vector{Int})
+
+Determine whether a player made a valid choice.
+
+# Arguments
+
+- `options`: a vector of options 
+- `choice`: the element from `options` selected by the player
+"""
+validate_choice(options::Vector{Vector{Int}}, choice::Vector{Int}) = choice ∈ options 
 
 """
     is_bust(game::AbstractGame, options)
@@ -135,7 +146,7 @@ function is_playing(game::AbstractGame)
     return all(x -> x < 3, counts)
 end
 
-function cleanup(game::AbstractGame, player)
+function cleanup!(game::AbstractGame, player)
     set_runners_false!(game::AbstractGame, player)
     empty!(game.runner_cols)
 end
@@ -179,7 +190,7 @@ next(idx, n) = idx == n ? 1 : idx += 1
 - `player::AbstractPlayer`: an subtype of a abstract player
 """
 function initialize_pieces!(game::AbstractGame, p::AbstractPlayer)
-    return Dict(i => Piece(;id=p.id, max_row=game.max_rows[i]) for i ∈ 2:11)
+    return Dict(i => Piece(;id=p.id, max_row=game.max_rows[i]) for i ∈ 2:12)
 end
 
 function initialize_pieces!(game::AbstractGame, players)
@@ -219,6 +230,15 @@ function return_to_start_position!(game::AbstractGame, player::AbstractPlayer)
     return nothing
 end
 
+"""
+    check_winners!(game::AbstractGame, player::AbstractPlayer)
+
+Following a stop decision, identifies whether `player` conquered any columns. Conquered columns 
+are tracked in the fields `columns_won` and `players_won` of the `game` object. 
+
+- `game::AbstractGame`: an abstract game object for Can't Stop
+- `player::AbstractPlayer`: an subtype of a abstract player
+"""
 function check_winners!(game::AbstractGame, player::AbstractPlayer)
     (;pieces,runner_cols,columns_won,players_won) = game
     id = player.id
