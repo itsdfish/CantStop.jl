@@ -79,7 +79,7 @@ end
 """
     get_winner(game::AbstractGame)
 
-Returns a vector of winners. If there is a tie, all winners are included in the vector. 
+Returns the winner of the game. 
 
 # Arguments
 
@@ -89,6 +89,6 @@ function get_winner(game::AbstractGame)
     ids = collect(keys(game.pieces))
     counts = [count(y -> id == y, values(game.players_won)) for id ∈ ids]
     max_val = maximum(counts)
-    idxs = findall(x -> x == max_val, counts)
+    idxs = findfirst(x -> x == max_val, counts)
     return ids[idxs]
 end

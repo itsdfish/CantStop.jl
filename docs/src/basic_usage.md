@@ -46,7 +46,7 @@ Each round begins with an initial roll of the dice and a decision to select runn
 
 - `game::AbstractGame`: a copy of the game object for Can't Stop
 - `player::Player`: a n object for your player type 
-- `options`: a copy of a vector of runners which can advance, e.g., `[[1,2],[3]]`
+- `options`: a copy of a vector of runners which can advance, e.g., `[[1,2],[3],[4]]`
 
 The method must return one element from the vector of options, e.g., `[1,2]`. In the simple example below, the player selects an option randomly with equal probability. 
 

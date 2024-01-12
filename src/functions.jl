@@ -49,19 +49,21 @@ moving the runners. The two methods named `decide!` are called during this phase
 - `game::AbstractGame`: an abstract game object for Can't Stop
 - `player::AbstractPlayer`: an subtype of a abstract player
 """
-function decision_phase!(game::AbstractGame, player::AbstractPlayer)
+function decision_phase!(game::AbstractGame, player::AbstractPlayer; is_safe=true)
     while true
         # roll the dice 
         outcome = roll(game.dice)
         # list_options
         options = list_options(game, outcome)
-        is_bust(game, options) ? (handle_bust!(game, player); break) : nothing
-        choice = select_runners(deepcopy(game), player, deepcopy(options))
+        is_bust(game, options) ? (handle_bust!(game, player; is_safe); break) : nothing
+        _game = is_safe ? game : deepcopy(game)
+        choice = select_runners(_game, player, deepcopy(options))
         validate_choice(options, choice) ? nothing : break 
         set_status!(game, player.id, choice)
         move!(game, player.id, choice)
-        risk_it = roll_again(deepcopy(game), player)
-        risk_it ? nothing : (handle_stop!(game, player); break) 
+         _game = is_safe ? game : deepcopy(game)
+        risk_it = roll_again(_game, player)
+        risk_it ? nothing : (handle_stop!(game, player; is_safe); break) 
     end
     return nothing
 end
@@ -159,8 +161,9 @@ end
 - `game::AbstractGame`: an abstract game object for Can't Stop
 - `player::AbstractPlayer`: an subtype of a abstract player
 """
-function handle_bust!(game::AbstractGame, player::AbstractPlayer)
-    postbust_cleanup!(deepcopy(game), player)
+function handle_bust!(game::AbstractGame, player::AbstractPlayer; is_safe)
+     _game = is_safe ? game : deepcopy(game)
+    postbust_cleanup!(_game, player)
     return_to_start_position!(game, player)
     return nothing
 end
@@ -173,8 +176,9 @@ end
 - `game::AbstractGame`: an abstract game object for Can't Stop
 - `player::AbstractPlayer`: an subtype of a abstract player
 """
-function handle_stop!(game::AbstractGame, player::AbstractPlayer)
-    poststop_cleanup!(deepcopy(game), player)
+function handle_stop!(game::AbstractGame, player::AbstractPlayer; is_safe)
+     _game = is_safe ? game : deepcopy(game)
+    poststop_cleanup!(_game, player)
     check_winners!(game, player)
     return nothing 
 end

@@ -238,7 +238,6 @@ end
 end
 
 @safetestset "move!" begin 
-
     using CantStop
     using CantStop: move!
     using Test
@@ -261,4 +260,15 @@ end
             @test game.pieces[:p1][i].row == 1
         end
     end
+end
+
+@safetestset "simulate!" begin 
+    using CantStop
+    using Test
+    include("test_utilities.jl")
+    
+    players = [Player(id=:p1), Player(id=:p2)]
+    game = Game()
+    simulate!(game, players)
+    @test get_winner(game) ∈ [:p1,:p2]
 end
