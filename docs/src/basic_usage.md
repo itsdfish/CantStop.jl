@@ -14,7 +14,7 @@ In this tutorial, we provide a basic example to illustrate how to use the API fo
 
 ## Dependencies 
 
-The first step is to load the dependencies. In this simple example, the only dependency we need is `CantStop`, which is loaded via the `using` keyword. In addition, we must import a total of five methods using the keyword `import`. By importing the methods, we can define a version of each method which works with our player type. 
+The first step is to load the dependencies. In this simple example, the only dependency we need is `CantStop`, which is loaded via keyword `using`. In addition, we must import a total of five methods using the keyword `import`. By importing the methods, we can define a version of each method which works with our player type. 
 
 ```@example example
 using CantStop
@@ -44,19 +44,25 @@ The API requires four methods to be defined for each custom type: `roll_again`, 
 
 Each round begins with an initial roll of the dice and a decision to select runners to move. The function requires the following arguments:
 
-- `game::AbstractGame`: a copy of the game object for Can't Stop
-- `player::Player`: a n object for your player type 
-- `options`: a copy of a vector of runners which can advance, e.g., `[[1,2],[3],[4]]`
+- `game::AbstractGame`: an abstract game object for Can't Stop. The object can be modified if `is_safe=false` is set 
+    in `simulate!`.- `player::Player`: a n object for your player type 
+- `options`: a vector of runners which can advance. For example, if the roll is `[1,1,2,2]` and runners can be used in columns 2,3, and 4, then the options would be `[[2,4],[3,3]]`. If a runner cannot be moved in column 2, then the options would be `[[4],[3,3]]`.
 
-The method must return one element from the vector of options, e.g., `[1,2]`. In the simple example below, the player selects an option randomly with equal probability. 
+The method must return one element from the vector of options, e.g., `[3,3]`. In the simple example below, the player selects an option randomly with equal probability. 
 
 ```@example example
 select_runners(game::AbstractGame, player::Player, options) = rand(options)
 ```
+Of course, in practice, you can develop a more effective strategy. 
 
 ### roll_again
 
-After moving runners, the player is presented with a decision to roll again for a chance to further advance the runners, or to stop and keep the runners in their current position. The player can make a decision based on the state of the game, which is provided in the game object. To make the player simple, it decides to continue stop with equal probability. 
+After moving runners, the player is presented with the following decision:
+
+- roll again for a chance to further advance the runners, or *bust*
+- stop rolling and keep the runners in their current position. 
+
+The player can make a decision based on the state of the game, which is provided in the game object. To make the player simple, it decides to continue stop with equal probability. 
 
 ```@example example
 roll_again(game::AbstractGame, player::Player) = rand(Bool)
@@ -81,10 +87,11 @@ poststop_cleanup!(game::AbstractGame, player::Player) = nothing
 ## Run Simulation 
 
 Now that we defined a custom player type and the four required methods, we can now simulate the game. Below, we begin by generating an instance of the default `Game` object. Next, we define a vector of two players with unique ids. Finally, we use `simulate!` so the two players play *Can't Stop* and then call `get_winner` to identify the winner. 
-
 ```@example example
 game = Game()
 players = [Player(id=:p1), Player(id=:p2)]
 simulate!(game, players)
 get_winner(game)
 ```
+
+It is important to note that the function `simulate!` includes the keyword `is_safe` with a default value of true. When `is_safe` is set to true, the simulation assumes players do not modify the `game` object, which improves speed. If any players modify the `game` object, set `is_safe=false`, which will pass a deep copy to each player, thus allowing the players to modify the copy without invalidating the game. 

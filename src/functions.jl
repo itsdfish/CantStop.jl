@@ -1,5 +1,5 @@
 """
-    simulate!(game::AbstractGame, players)
+    simulate!(game::AbstractGame, players; is_safe=true)
 
 Simulate CantStop until a player has won. 
 
@@ -7,20 +7,25 @@ Simulate CantStop until a player has won.
 
 - `game::AbstractGame`: an abstract game object for Can't Stop
 - `player::AbstractPlayer`: an subtype of a abstract player
+
+# Keywords
+
+- `is_safe=true`: whether players safely read `game` object without modification. Set to `false` if 
+    any player modifies `game` object, or might cheat. 
 """
-function simulate!(game::AbstractGame, players)
+function simulate!(game::AbstractGame, players; is_safe=true)
     initialize_pieces!(game, players)
     shuffle!(players)
     n = length(players)
     idx = 1
     while is_playing(game)
-        play_round!(game, players[idx])
+        play_round!(game, players[idx]; is_safe)
         idx = next(idx, n)
     end
 end
 
 """
-    play_round!(game::AbstractGame, player::AbstractPlayer)
+    play_round!(game::AbstractGame, player::AbstractPlayer; is_safe=true)
 
 Play one round with a specified player. During each iteration of a round, the player makes two decision_phase
 
@@ -31,15 +36,20 @@ Play one round with a specified player. During each iteration of a round, the pl
 
 - `game::AbstractGame`: an abstract game object for Can't Stop
 - `player::AbstractPlayer`: an subtype of a abstract player
+
+# Keywords
+
+- `is_safe=true`: whether players safely read `game` object without modification. Set to `false` if 
+    any player modifies `game` object, or might cheat. 
 """
-function play_round!(game::AbstractGame, player::AbstractPlayer)
-    decision_phase!(game, player)
+function play_round!(game::AbstractGame, player::AbstractPlayer; is_safe=true)
+    decision_phase!(game, player; is_safe)
     cleanup!(game, player)
     return nothing
 end
 
 """
-    decision_phase!(game::AbstractGame, player::AbstractPlayer)
+    decision_phase!(game::AbstractGame, player::AbstractPlayer; is_safe=true)
 
 Implements the decision phase in which the player decides to roll the dice for the possibility of 
 moving the runners. The two methods named `decide!` are called during this phase.
@@ -48,6 +58,11 @@ moving the runners. The two methods named `decide!` are called during this phase
 
 - `game::AbstractGame`: an abstract game object for Can't Stop
 - `player::AbstractPlayer`: an subtype of a abstract player
+
+# Keywords
+
+- `is_safe=true`: whether players safely read `game` object without modification. Set to `false` if 
+    any player modifies `game` object, or might cheat. 
 """
 function decision_phase!(game::AbstractGame, player::AbstractPlayer; is_safe=true)
     while true
@@ -71,7 +86,7 @@ end
 roll(dice) = rand(1:dice.sides, dice.n)
 
 """
-    move!(game::AbstractGame, id, r_idx)
+    move!(game::AbstractGame, id, c_idx)
 
 Move runner to location determined by column and row index
 
@@ -154,12 +169,17 @@ function cleanup!(game::AbstractGame, player)
 end
 
 """
-    set_runners_false!(game::AbstractGame, player)
+    handle_bust!(game::AbstractGame, player::AbstractPlayer; is_safe)
 
 # Arguments
 
 - `game::AbstractGame`: an abstract game object for Can't Stop
 - `player::AbstractPlayer`: an subtype of a abstract player
+
+# Keywords
+
+- `is_safe=true`: whether players safely read `game` object without modification. Set to `false` if 
+    any player modifies `game` object, or might cheat. 
 """
 function handle_bust!(game::AbstractGame, player::AbstractPlayer; is_safe)
      _game = is_safe ? game : deepcopy(game)
@@ -169,12 +189,17 @@ function handle_bust!(game::AbstractGame, player::AbstractPlayer; is_safe)
 end
 
 """
-    set_runners_false!(game::AbstractGame, player)
+    handle_stop!(game::AbstractGame, player::AbstractPlayer; is_safe)
 
 # Arguments
 
 - `game::AbstractGame`: an abstract game object for Can't Stop
 - `player::AbstractPlayer`: an subtype of a abstract player
+
+# Keywords
+
+- `is_safe=true`: whether players safely read `game` object without modification. Set to `false` if 
+    any player modifies `game` object, or might cheat. 
 """
 function handle_stop!(game::AbstractGame, player::AbstractPlayer; is_safe)
      _game = is_safe ? game : deepcopy(game)
@@ -186,7 +211,7 @@ end
 next(idx, n) = idx == n ? 1 : idx += 1
 
 """
-    set_runners_false!(game::AbstractGame, player)
+    initialize_pieces!(game::AbstractGame, p::AbstractPlayer)
 
 # Arguments
 
@@ -203,7 +228,7 @@ function initialize_pieces!(game::AbstractGame, players)
 end
 
 """
-    set_runners_false!(game::AbstractGame, player)
+    set_runners_false!(game::AbstractGame, player::AbstractPlayer)
 
 # Arguments
 
