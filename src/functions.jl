@@ -13,7 +13,7 @@ Simulate CantStop until a player has won.
 - `is_safe=true`: whether players safely read `game` object without modification. Set to `false` if 
     any player modifies `game` object, or might cheat. 
 """
-function simulate!(game::AbstractGame, players; is_safe=true)
+function simulate!(game::AbstractGame, players; is_safe = true)
     initialize_pieces!(game, players)
     shuffle!(players)
     n = length(players)
@@ -42,7 +42,7 @@ Play one round with a specified player. During each iteration of a round, the pl
 - `is_safe=true`: whether players safely read `game` object without modification. Set to `false` if 
     any player modifies `game` object, or might cheat. 
 """
-function play_round!(game::AbstractGame, player::AbstractPlayer; is_safe=true)
+function play_round!(game::AbstractGame, player::AbstractPlayer; is_safe = true)
     decision_phase!(game, player; is_safe)
     cleanup!(game, player)
     return nothing
@@ -64,7 +64,7 @@ moving the runners. The two methods named `decide!` are called during this phase
 - `is_safe=true`: whether players safely read `game` object without modification. Set to `false` if 
     any player modifies `game` object, or might cheat. 
 """
-function decision_phase!(game::AbstractGame, player::AbstractPlayer; is_safe=true)
+function decision_phase!(game::AbstractGame, player::AbstractPlayer; is_safe = true)
     while true
         # roll the dice 
         outcome = roll(game.dice)
@@ -73,12 +73,12 @@ function decision_phase!(game::AbstractGame, player::AbstractPlayer; is_safe=tru
         is_bust(game, options) ? (handle_bust!(game, player; is_safe); break) : nothing
         _game = is_safe ? game : deepcopy(game)
         choice = select_runners(_game, player, deepcopy(options))
-        validate_choice(options, choice) ? nothing : break 
+        validate_choice(options, choice) ? nothing : break
         set_status!(game, player.id, choice)
         move!(game, player.id, choice)
-         _game = is_safe ? game : deepcopy(game)
+        _game = is_safe ? game : deepcopy(game)
         risk_it = roll_again(_game, player)
-        risk_it ? nothing : (handle_stop!(game, player; is_safe); break) 
+        risk_it ? nothing : (handle_stop!(game, player; is_safe); break)
     end
     return nothing
 end
@@ -100,7 +100,7 @@ function move!(game::AbstractGame, id, c_idx)
     for c ∈ c_idx
         game.pieces[id][c].row += 1
     end
-    return nothing 
+    return nothing
 end
 
 """
@@ -117,13 +117,13 @@ Move runner to location determined by column and row index
 function set_status!(game::AbstractGame, id, c_idx)
     for i ∈ 1:length(c_idx)
         piece = game.pieces[id][c_idx[i]]
-        if !piece.is_runner 
-            piece.is_runner = true 
+        if !piece.is_runner
+            piece.is_runner = true
             piece.start_row = piece.row
-            push!(game.runner_cols, c_idx[i]) 
+            push!(game.runner_cols, c_idx[i])
         end
     end
-    return nothing 
+    return nothing
 end
 
 
@@ -137,7 +137,7 @@ Determine whether a player made a valid choice.
 - `options`: a vector of options 
 - `choice`: the element from `options` selected by the player
 """
-validate_choice(options::Vector{Vector{Int}}, choice::Vector{Int}) = choice ∈ options 
+validate_choice(options::Vector{Vector{Int}}, choice::Vector{Int}) = choice ∈ options
 
 """
     is_bust(game::AbstractGame, options)
@@ -182,7 +182,7 @@ end
     any player modifies `game` object, or might cheat. 
 """
 function handle_bust!(game::AbstractGame, player::AbstractPlayer; is_safe)
-     _game = is_safe ? game : deepcopy(game)
+    _game = is_safe ? game : deepcopy(game)
     postbust_cleanup!(_game, player)
     return_to_start_position!(game, player)
     return nothing
@@ -202,10 +202,10 @@ end
     any player modifies `game` object, or might cheat. 
 """
 function handle_stop!(game::AbstractGame, player::AbstractPlayer; is_safe)
-     _game = is_safe ? game : deepcopy(game)
+    _game = is_safe ? game : deepcopy(game)
     poststop_cleanup!(_game, player)
     check_winners!(game, player)
-    return nothing 
+    return nothing
 end
 
 next(idx, n) = idx == n ? 1 : idx += 1
@@ -219,7 +219,7 @@ next(idx, n) = idx == n ? 1 : idx += 1
 - `player::AbstractPlayer`: an subtype of a abstract player
 """
 function initialize_pieces!(game::AbstractGame, p::AbstractPlayer)
-    return Dict(i => Piece(;id=p.id, max_row=game.max_rows[i]) for i ∈ 2:12)
+    return Dict(i => Piece(; id = p.id, max_row = game.max_rows[i]) for i ∈ 2:12)
 end
 
 function initialize_pieces!(game::AbstractGame, players)
@@ -237,7 +237,7 @@ end
 """
 function set_runners_false!(game::AbstractGame, player::AbstractPlayer)
     for p ∈ values(game.pieces[player.id])
-        p.is_runner = false 
+        p.is_runner = false
     end
     return nothing
 end
@@ -252,7 +252,7 @@ end
 """
 function return_to_start_position!(game::AbstractGame, player::AbstractPlayer)
     for p ∈ values(game.pieces[player.id])
-        if p.is_runner 
+        if p.is_runner
             p.row = p.start_row
         end
     end
@@ -269,13 +269,13 @@ are tracked in the fields `columns_won` and `players_won` of the `game` object.
 - `player::AbstractPlayer`: an subtype of a abstract player
 """
 function check_winners!(game::AbstractGame, player::AbstractPlayer)
-    (;pieces,runner_cols,columns_won,players_won) = game
+    (; pieces, runner_cols, columns_won, players_won) = game
     id = player.id
     for c ∈ runner_cols
         piece = pieces[id][c]
         if piece.row ≥ piece.max_row
-           push!(columns_won, c) 
-           players_won[c] = id
+            push!(columns_won, c)
+            players_won[c] = id
         end
     end
     return nothing
@@ -294,11 +294,11 @@ function list_sums(outcome)
     output = Vector{Vector{Int}}()
     for p ∈ permutations(outcome)
         s = [p[1] + p[2], p[3] + p[4]]
-        if s ∉ output && reverse!(s) ∉ output 
+        if s ∉ output && reverse!(s) ∉ output
             push!(output, reverse!(s))
         end
     end
-    return output 
+    return output
 end
 
 """
@@ -312,20 +312,20 @@ Lists all unique sum of combinations of the outcome of rolling dice
 - `outcome`: the results of rolling the dice
 """
 function list_options(game, outcome)
-    (;runner_cols,columns_won) = game 
+    (; runner_cols, columns_won) = game
     all_options = list_sums(outcome)
     n_runners = length(runner_cols)
     to_keep = fill(true, length(all_options))
     split_options = Vector{Vector{Int}}()
-    for (i,option) ∈ enumerate(all_options)
+    for (i, option) ∈ enumerate(all_options)
         filter!(x -> x ∉ columns_won, option)
         if n_runners == 3
             filter!(x -> x ∈ runner_cols, option)
         elseif n_runners == 0
             continue
         elseif n_runners < 3
-            to_keep[i] = all(x -> x == option[1], option) ||
-                 any(x -> x ∈ runner_cols, option)
+            to_keep[i] =
+                all(x -> x == option[1], option) || any(x -> x ∈ runner_cols, option)
             if !to_keep[i]
                 push!(split_options, [[v] for v ∈ option]...)
             end

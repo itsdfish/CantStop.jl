@@ -7,7 +7,7 @@ struct Player <: AbstractPlayer
     id::Symbol
 end
 
-Player(;id) = Player(id)
+Player(; id) = Player(id)
 
 roll_again(game::AbstractGame, player::Player) = rand(Bool)
 
